@@ -11,7 +11,8 @@ La conexion a PostgreSQL nativo usa flotas_db y configuracion local.
 La entidad Camion y el enum EstadoCamion estan implementados. Hibernate
 crea la tabla camiones al iniciar. CamionRepository usa JpaRepository para
 guardar, listar, consultar y eliminar camiones. CamionRequest y CamionResponse
-definen los datos de entrada y salida. Los endpoints CRUD estan pendientes.
+definen los datos de entrada y salida. POST /camiones ya permite crear camiones
+y guardarlos en PostgreSQL. Los demas endpoints estan pendientes.
 
 ## Alcance del CRUD
 
@@ -20,7 +21,7 @@ y eliminar. Tambien permitira consultar por estado y por conductor asignado.
 Los datos se guardaran en PostgreSQL nativo, en `flotas_db`, tabla `camiones`.
 
 Los campos y reglas siguientes son decisiones de este proyecto. Describen
-lo que implementaremos en la API; los endpoints y sus reglas estan pendientes.
+lo que implementaremos en la API. POST esta implementado; las demas operaciones y las validaciones completas estan pendientes.
 
 ## Campos previstos del camion
 
@@ -36,7 +37,7 @@ CamionRequest recibe patente, capacidadKg, estado y conductorId. No incluye
 un campo ID. Estado y conductorId pueden quedar null para que el service
 aplique las reglas previstas en creacion y actualizacion.
 CamionResponse incluye los cinco campos de la tabla anterior.
-Las validaciones de entrada se agregaran en el paso 14.
+El service comprueba patente obligatoria y capacidad finita mayor que cero. Las validaciones completas de los DTO se agregaran en el paso 14.
 
 ## Estados previstos
 
@@ -69,7 +70,8 @@ para la coordinacion entre servicios.
 
 ## Endpoints previstos
 
-Base local: `http://localhost:8083`.
+Base local: `http://localhost:8083`. POST /camiones esta implementado.
+Los demas endpoints de esta tabla se agregaran en los pasos siguientes.
 
 | Metodo | Ruta | Funcion | Respuesta correcta |
 | --- | --- | --- | --- |
@@ -81,7 +83,7 @@ Base local: `http://localhost:8083`.
 | GET | `/camiones/estado/{estado}` | Consultar por estado. | 200 OK |
 | GET | `/camiones/conductor/{conductorId}` | Consultar por conductor. | 200 OK |
 
-Ejemplo del JSON previsto para POST, con estado inicial DISPONIBLE y sin
+Ejemplo del JSON para POST /camiones, con estado inicial DISPONIBLE y sin
 conductor asignado:
 
 ```json
@@ -91,6 +93,13 @@ conductor asignado:
   "conductorId": null
 }
 ```
+
+POST devuelve 201 Created con id, patente, capacidadKg, estado y conductorId.
+La patente se guarda sin espacios exteriores y en mayusculas. Si se omite
+el estado o se envia null, se conserva el valor inicial DISPONIBLE.
+Patente vacia o capacidad ausente, no finita o menor o igual a cero devuelven 400.
+Las longitudes, conductorId, duplicados y errores uniformes se completaran
+en los pasos de validacion y manejo de errores.
 
 ## Relacion con los otros microservicios
 
@@ -202,7 +211,7 @@ Como alternativa, ejecutar el JAR:
 ```
 
 La aplicacion usa `http://localhost:8083`. Iniciar una sola instancia a la
-vez y detenerla con Ctrl+C. Los endpoints CRUD todavia estan pendientes.
+vez y detenerla con Ctrl+C. POST /camiones esta disponible; los demas endpoints estan pendientes.
 
 ## Archivos de desarrollo
 
@@ -213,6 +222,6 @@ vez y detenerla con Ctrl+C. Los endpoints CRUD todavia estan pendientes.
 
 ## Proximos pasos
 
-Continuar con el service y los endpoints del CRUD y las consultas
-definidas en esta guia.
+Implementar listado, filtros y consulta por ID; despues, actualizacion y
+eliminacion, validaciones completas y manejo de errores.
 Despues se agregaran pruebas automatizadas y una coleccion Postman.
