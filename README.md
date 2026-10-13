@@ -9,6 +9,104 @@ El proyecto base compila y genera un JAR. Incluye Spring Boot, Maven Wrapper
 y la configuracion del puerto 8083. Los endpoints de camiones y la conexion
 a PostgreSQL se implementaran en los pasos siguientes.
 
+## Alcance del CRUD
+
+Este avance gestionara camiones: crear, listar, consultar por ID, actualizar
+y eliminar. Tambien permitira consultar por estado y por conductor asignado.
+Los datos se guardaran en PostgreSQL nativo, en `flotas_db`, tabla `camiones`.
+
+Los campos y reglas siguientes son decisiones de este proyecto. Describen
+lo que implementaremos; los endpoints y la persistencia todavia estan pendientes.
+
+## Campos previstos del camion
+
+| Campo | Tipo Java | Regla prevista |
+| --- | --- | --- |
+| id | Long | Generado por PostgreSQL; se conserva al actualizar. |
+| patente | String | Obligatoria, unica y de hasta 10 caracteres. |
+| capacidadKg | Double | Obligatoria y mayor que cero; expresada en kilogramos. |
+| estado | EstadoCamion (enum) | DISPONIBLE, EN_RUTA o MANTENCION. |
+| conductorId | Long | Opcional; si se indica, debe ser mayor que cero. |
+
+El DTO de entrada recibira patente, capacidadKg, estado y conductorId.
+El ID se obtendra de la ruta para consultar, actualizar o eliminar; se
+generara en el servidor al crear. La respuesta incluira los cinco campos.
+
+## Estados previstos
+
+- `DISPONIBLE`: registrado como disponible para asignacion.
+- `EN_RUTA`: registrado como realizando una ruta de recoleccion.
+- `MANTENCION`: registrado como en mantenimiento.
+
+Al crear, el estado sera DISPONIBLE si se omite o se envia null.
+Al actualizar, omitir el estado o enviarlo null conservara el estado anterior.
+Un valor diferente de los tres definidos devolvera 400.
+
+En este CRUD el estado se gestionara desde Flota. La sincronizacion del estado
+con las operaciones de Rutas queda para una etapa posterior.
+
+## Reglas previstas
+
+- POST y PUT requeriran patente y capacidadKg.
+- La patente se guardara sin espacios exteriores y en mayusculas.
+- Los duplicados se comprobaran ignorando mayusculas y minusculas; la tabla
+  tendra una restriccion UNIQUE sobre la patente normalizada.
+- PUT conservara el ID y permitira mantener la patente del propio camion.
+- Omitir conductorId o enviarlo null en PUT quitara la asignacion anterior.
+- Un ID inexistente devolvera 404; una patente duplicada devolvera 409.
+- Los datos invalidos devolveran 400 y los errores tendran formato uniforme.
+- Los listados por estado o conductor sin coincidencias devolveran `[]`.
+
+No se exigira un patron de patente de un pais especifico en este avance.
+La comprobacion de existencia y rol del conductor en Usuarios queda pendiente
+para la coordinacion entre servicios.
+
+## Endpoints previstos
+
+Base local: `http://localhost:8083`.
+
+| Metodo | Ruta | Funcion | Respuesta correcta |
+| --- | --- | --- | --- |
+| POST | `/camiones` | Crear un camion. | 201 Created |
+| GET | `/camiones` | Listar camiones. | 200 OK |
+| GET | `/camiones/{id}` | Consultar por ID. | 200 OK |
+| PUT | `/camiones/{id}` | Actualizar un camion. | 200 OK |
+| DELETE | `/camiones/{id}` | Eliminar un camion. | 204 No Content |
+| GET | `/camiones/estado/{estado}` | Consultar por estado. | 200 OK |
+| GET | `/camiones/conductor/{conductorId}` | Consultar por conductor. | 200 OK |
+
+Ejemplo del JSON previsto para POST, con estado inicial DISPONIBLE y sin
+conductor asignado:
+
+```json
+{
+  "patente": "ABCD12",
+  "capacidadKg": 3500.0,
+  "conductorId": null
+}
+```
+
+## Relacion con los otros microservicios
+
+Rutas guarda `camionId` como Long. Por eso el ID de Camion tambien sera Long.
+`conductorId` referenciara el ID de un usuario del microservicio Usuarios.
+
+Flota mantendra su propia base de datos. Las referencias a otros servicios
+se guardaran como IDs; las relaciones JPA se limitaran a entidades de esta
+misma base. Las llamadas HTTP entre servicios quedan para una etapa posterior.
+
+Eliminar un camion en Flota no eliminara ni comprobara sus rutas. Antes de
+borrar camiones usados en pruebas compartidas, revisar sus referencias con Rutas.
+
+## Organizacion prevista
+
+- `controller`: endpoints REST de camiones.
+- `service`: operaciones y reglas de flota.
+- `repository`: acceso a PostgreSQL con JpaRepository.
+- `model`: entidad Camion y enum EstadoCamion.
+- `dto`: datos de entrada, respuesta y errores.
+- `exception`: manejo centralizado de errores.
+
 ## Tecnologias
 
 - Java 21.
@@ -61,6 +159,6 @@ vez y detenerla con Ctrl+C. Los endpoints CRUD todavia estan pendientes.
 
 ## Proximos pasos
 
-Definir los campos y estados de los camiones, incorporar persistencia y
-validacion, configurar PostgreSQL nativo e implementar el CRUD.
+Incorporar persistencia y validacion, configurar PostgreSQL nativo e
+implementar los endpoints del CRUD y las consultas definidas en esta guia.
 Despues se agregaran pruebas automatizadas y una coleccion Postman.
