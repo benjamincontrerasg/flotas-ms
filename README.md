@@ -7,8 +7,8 @@ a domicilio.
 
 El proyecto compila y genera un JAR. Incluye Spring Boot, Maven Wrapper,
 JPA, validacion, el driver de PostgreSQL y la configuracion del puerto 8083.
-Los endpoints de camiones y la conexion a PostgreSQL estan pendientes.
-Antes de iniciar la aplicacion hay que configurar PostgreSQL en el paso 5.
+La conexion a PostgreSQL nativo usa flotas_db y configuracion local.
+La entidad Camion y los endpoints CRUD estan pendientes.
 
 ## Alcance del CRUD
 
@@ -129,6 +129,51 @@ $env:JAVA_HOME = 'C:\Program Files\Java\jdk-21.0.10'
 La salida de Maven debe indicar Java 21. La primera compilacion necesita
 internet para descargar las dependencias.
 
+## Preparar PostgreSQL nativo
+
+Con PostgreSQL instalado directamente y en ejecucion, comprobar la conexion:
+
+```powershell
+pg_isready -h localhost -p 5432
+```
+
+Crear la base una sola vez, desde la raiz del proyecto:
+
+```powershell
+psql -h localhost -U postgres -d postgres -f sql/crear_base.sql
+```
+
+Si `flotas_db` ya existe, conservarla y omitir el script de creacion.
+Copiar el ejemplo solo si aun no existe la configuracion local:
+
+```powershell
+if (-not (Test-Path application-local.properties)) {
+    Copy-Item application-local.properties.example application-local.properties
+}
+```
+
+Editar `application-local.properties` con las credenciales propias:
+
+```properties
+DB_URL=jdbc:postgresql://localhost:5432/flotas_db
+DB_USERNAME=postgres
+DB_PASSWORD=TU_CONTRASENA
+```
+
+Este archivo esta ignorado por Git. Tambien se pueden definir DB_URL,
+DB_USERNAME y DB_PASSWORD como variables de entorno. Ejecutar Spring Boot
+desde la raiz del proyecto para que encuentre el archivo local.
+
+Para consultar la base desde otra terminal:
+
+```powershell
+psql -h localhost -U postgres -d flotas_db
+```
+
+Dentro de psql, `SELECT current_database();` debe devolver `flotas_db`.
+Usar `\dt` para listar tablas y `\q` para salir. Hibernate creara la tabla
+de camiones cuando se incorpore la entidad en el paso 6.
+
 ## Compilar y ejecutar
 
 Abrir PowerShell en la raiz del proyecto y compilar:
@@ -162,6 +207,6 @@ vez y detenerla con Ctrl+C. Los endpoints CRUD todavia estan pendientes.
 
 ## Proximos pasos
 
-Configurar PostgreSQL nativo e
-implementar los endpoints del CRUD y las consultas definidas en esta guia.
+Crear la entidad Camion y continuar con el repositorio, DTO y endpoints
+del CRUD y las consultas definidas en esta guia.
 Despues se agregaran pruebas automatizadas y una coleccion Postman.

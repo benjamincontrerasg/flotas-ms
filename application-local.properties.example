@@ -1,0 +1,4 @@
+# Copiar como application-local.properties y completar la contrasena
+DB_URL=jdbc:postgresql://localhost:5432/flotas_db
+DB_USERNAME=postgres
+DB_PASSWORD=CAMBIAR_POR_TU_CONTRASENA
