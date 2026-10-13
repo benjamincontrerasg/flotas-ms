@@ -12,7 +12,9 @@ La entidad Camion y el enum EstadoCamion estan implementados. Hibernate
 crea la tabla camiones al iniciar. CamionRepository usa JpaRepository para
 guardar, listar, consultar y eliminar camiones. CamionRequest y CamionResponse
 definen los datos de entrada y salida. POST /camiones ya permite crear camiones
-y guardarlos en PostgreSQL. Los demas endpoints estan pendientes.
+y guardarlos en PostgreSQL. GET /camiones permite listar; los filtros por
+estado y conductor tambien estan implementados. Consulta por ID, PUT y
+DELETE estan pendientes.
 
 ## Alcance del CRUD
 
@@ -21,7 +23,8 @@ y eliminar. Tambien permitira consultar por estado y por conductor asignado.
 Los datos se guardaran en PostgreSQL nativo, en `flotas_db`, tabla `camiones`.
 
 Los campos y reglas siguientes son decisiones de este proyecto. Describen
-lo que implementaremos en la API. POST esta implementado; las demas operaciones y las validaciones completas estan pendientes.
+lo que implementaremos en la API. POST, listado y filtros estan implementados; consulta por ID, actualizacion,
+eliminacion y las validaciones completas estan pendientes.
 
 ## Campos previstos del camion
 
@@ -70,8 +73,9 @@ para la coordinacion entre servicios.
 
 ## Endpoints previstos
 
-Base local: `http://localhost:8083`. POST /camiones esta implementado.
-Los demas endpoints de esta tabla se agregaran en los pasos siguientes.
+Base local: `http://localhost:8083`. POST /camiones y los GET de listado, estado
+y conductor estan implementados. GET por ID, PUT y DELETE se agregaran
+en los pasos siguientes.
 
 | Metodo | Ruta | Funcion | Respuesta correcta |
 | --- | --- | --- | --- |
@@ -100,6 +104,29 @@ el estado o se envia null, se conserva el valor inicial DISPONIBLE.
 Patente vacia o capacidad ausente, no finita o menor o igual a cero devuelven 400.
 Las longitudes, conductorId, duplicados y errores uniformes se completaran
 en los pasos de validacion y manejo de errores.
+
+## Listar y filtrar camiones
+
+Con el servicio iniciado, ejecutar desde otra terminal:
+
+```powershell
+Invoke-RestMethod -Uri 'http://localhost:8083/camiones' -Method Get
+Invoke-RestMethod -Uri 'http://localhost:8083/camiones/estado/DISPONIBLE' -Method Get
+Invoke-RestMethod -Uri 'http://localhost:8083/camiones/conductor/1' -Method Get
+```
+
+Los tres endpoints devuelven 200 OK y una lista de CamionResponse con id,
+patente, capacidadKg, estado y conductorId. Si no hay coincidencias, devuelven
+`[]`. El listado general incluye tambien camiones sin conductor asignado.
+El orden de las listas no esta definido.
+
+El filtro de estado recibe DISPONIBLE, EN_RUTA o MANTENCION en mayusculas.
+Un estado desconocido devuelve 400. El ID del conductor debe ser un Long
+positivo: texto, cero o valores negativos devuelven 400. Un ID positivo sin
+camiones asignados devuelve una lista vacia.
+
+El filtro consulta el conductorId guardado en Flota. La comprobacion del
+usuario y su rol en el servicio Usuarios sigue pendiente.
 
 ## Relacion con los otros microservicios
 
@@ -211,7 +238,7 @@ Como alternativa, ejecutar el JAR:
 ```
 
 La aplicacion usa `http://localhost:8083`. Iniciar una sola instancia a la
-vez y detenerla con Ctrl+C. POST /camiones esta disponible; los demas endpoints estan pendientes.
+vez y detenerla con Ctrl+C. POST, listado y filtros estan disponibles; GET por ID, PUT y DELETE estan pendientes.
 
 ## Archivos de desarrollo
 
@@ -222,6 +249,6 @@ vez y detenerla con Ctrl+C. POST /camiones esta disponible; los demas endpoints 
 
 ## Proximos pasos
 
-Implementar listado, filtros y consulta por ID; despues, actualizacion y
+Implementar consulta por ID; despues, actualizacion y
 eliminacion, validaciones completas y manejo de errores.
 Despues se agregaran pruebas automatizadas y una coleccion Postman.
