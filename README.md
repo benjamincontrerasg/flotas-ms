@@ -24,8 +24,8 @@ y eliminar. Tambien permitira consultar por estado y por conductor asignado.
 Los datos se guardaran en PostgreSQL nativo, en `flotas_db`, tabla `camiones`.
 
 Los campos y reglas siguientes son decisiones de este proyecto. Describen
-lo que implementaremos en la API. Las operaciones CRUD y los filtros estan implementados. Las validaciones de entrada estan implementadas. El control de duplicados
-con 409 y los errores uniformes estan pendientes.
+lo que implementaremos en la API. Las operaciones CRUD y los filtros estan implementados. Las validaciones de entrada estan implementadas. El control de duplicados con 409 tambien esta implementado.
+El formato uniforme de errores esta pendiente.
 
 ## Campos previstos del camion
 
@@ -61,8 +61,8 @@ con las operaciones de Rutas queda para una etapa posterior.
 
 - POST y PUT requeriran patente y capacidadKg.
 - La patente se guardara sin espacios exteriores y en mayusculas.
-- Los duplicados se comprobaran ignorando mayusculas y minusculas; la tabla
-  tendra una restriccion UNIQUE sobre la patente normalizada.
+- Los duplicados se comprueban ignorando mayusculas y minusculas; la tabla
+  mantiene una restriccion UNIQUE sobre la patente normalizada.
 - PUT conservara el ID y permitira mantener la patente del propio camion.
 - Omitir conductorId o enviarlo null en PUT quitara la asignacion anterior.
 - Un ID inexistente devolvera 404; una patente duplicada devolvera 409.
@@ -103,8 +103,8 @@ POST devuelve 201 Created con id, patente, capacidadKg, estado y conductorId.
 La patente se guarda sin espacios exteriores y en mayusculas. Si se omite
 el estado o se envia null, se conserva el valor inicial DISPONIBLE.
 Patente vacia o capacidad ausente, no finita o menor o igual a cero devuelven 400.
-Las restricciones de longitud y conductorId estan implementadas. El control
-de duplicados con 409 y los errores uniformes se completaran en los pasos siguientes.
+Las restricciones de longitud y conductorId estan implementadas. Los duplicados devuelven 409. El formato uniforme de errores se completara
+en el paso siguiente.
 
 ## Listar y filtrar camiones
 
@@ -160,8 +160,8 @@ Si se omite conductorId o se envia null, quita la asignacion anterior.
 Un ID inexistente devuelve 404 y no crea un camion nuevo. Patente vacia,
 capacidad ausente, no finita o menor o igual a cero devuelven 400. Un estado
 desconocido, JSON incorrecto o ID no numerico tambien devuelve 400.
-Las validaciones de entrada estan implementadas; el error 409 por duplicados
-sigue pendiente.
+Las validaciones de entrada y el error 409 por patentes duplicadas estan
+implementados.
 
 ## Eliminar un camion
 
@@ -194,6 +194,19 @@ para POST y PUT.
 Los datos invalidos devuelven 400 y no se guardan. Un PUT rechazado por
 validacion conserva los datos anteriores del camion. El formato uniforme
 de errores se implementara en el paso 16.
+
+## Patentes duplicadas
+
+- POST devuelve 409 Conflict si la patente ya pertenece a un camion.
+- PUT devuelve 409 si intenta usar la patente de otro camion.
+- PUT permite conservar la patente del propio camion.
+- Las comparaciones ignoran mayusculas y minusculas; la patente se guarda
+  sin espacios exteriores y en mayusculas.
+
+CamionRepository comprueba la existencia antes de guardar. PostgreSQL
+mantiene la restriccion UNIQUE. Si dos peticiones intentan guardar la misma
+patente, la base evita el duplicado y el service convierte ese conflicto
+en una respuesta 409. Los otros errores de persistencia siguen su curso.
 
 ## Relacion con los otros microservicios
 
@@ -316,5 +329,5 @@ vez y detenerla con Ctrl+C. POST, todas las consultas GET, PUT y DELETE estan di
 
 ## Proximos pasos
 
-Completar el control de patentes duplicadas y el manejo de errores.
+Completar el manejo uniforme de errores.
 Despues se agregaran pruebas automatizadas y una coleccion Postman.

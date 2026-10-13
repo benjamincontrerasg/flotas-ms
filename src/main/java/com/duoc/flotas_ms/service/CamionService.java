@@ -12,6 +12,8 @@ import com.duoc.flotas_ms.model.EstadoCamion;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.sql.SQLException;
+import org.springframework.dao.DataIntegrityViolationException;
 
 @Service
 public class CamionService {
@@ -27,13 +29,16 @@ public class CamionService {
 
         Camion camion = new Camion();
         camion.setPatente(datos.getPatente().trim().toUpperCase(Locale.ROOT));
+        if (repository.existsByPatenteIgnoreCase(camion.getPatente())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "La patente ya esta registrada");
+        }
         camion.setCapacidadKg(datos.getCapacidadKg());
         if (datos.getEstado() != null) {
             camion.setEstado(datos.getEstado());
         }
         camion.setConductorId(datos.getConductorId());
 
-        Camion guardado = repository.save(camion);
+        Camion guardado = guardarCamion(camion);
         return new CamionResponse(guardado.getId(), guardado.getPatente(),
                 guardado.getCapacidadKg(), guardado.getEstado(), guardado.getConductorId());
     }
@@ -74,14 +79,18 @@ public class CamionService {
         }
 
         Camion camion = resultado.get();
-        camion.setPatente(datos.getPatente().trim().toUpperCase(Locale.ROOT));
+        String patente = datos.getPatente().trim().toUpperCase(Locale.ROOT);
+        if (repository.existsByPatenteIgnoreCaseAndIdNot(patente, id)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "La patente ya esta registrada");
+        }
+        camion.setPatente(patente);
         camion.setCapacidadKg(datos.getCapacidadKg());
         if (datos.getEstado() != null) {
             camion.setEstado(datos.getEstado());
         }
         camion.setConductorId(datos.getConductorId());
 
-        Camion guardado = repository.save(camion);
+        Camion guardado = guardarCamion(camion);
         return new CamionResponse(guardado.getId(), guardado.getPatente(),
                 guardado.getCapacidadKg(), guardado.getEstado(), guardado.getConductorId());
     }
@@ -92,6 +101,23 @@ public class CamionService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Camion no encontrado");
         }
         repository.delete(resultado.get());
+    }
+
+    private Camion guardarCamion(Camion camion) {
+        try {
+            return repository.save(camion);
+        } catch (DataIntegrityViolationException error) {
+            // PostgreSQL usa 23505 cuando se repite un valor unico.
+            Throwable causa = error.getMostSpecificCause();
+            if (causa instanceof SQLException) {
+                SQLException errorSql = (SQLException) causa;
+                if ("23505".equals(errorSql.getSQLState())) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT,
+                            "La patente ya esta registrada");
+                }
+            }
+            throw error;
+        }
     }
 
     private void validarDatos(CamionRequest datos) {

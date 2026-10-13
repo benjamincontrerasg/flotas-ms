@@ -12,4 +12,8 @@ public interface CamionRepository extends JpaRepository<Camion, Long> {
     List<Camion> findByEstado(EstadoCamion estado);
 
     List<Camion> findByConductorId(Long conductorId);
+
+    boolean existsByPatenteIgnoreCase(String patente);
+
+    boolean existsByPatenteIgnoreCaseAndIdNot(String patente, Long id);
 }
