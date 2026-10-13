@@ -8,7 +8,8 @@ a domicilio.
 El proyecto compila y genera un JAR. Incluye Spring Boot, Maven Wrapper,
 JPA, validacion, el driver de PostgreSQL y la configuracion del puerto 8083.
 La conexion a PostgreSQL nativo usa flotas_db y configuracion local.
-La entidad Camion y los endpoints CRUD estan pendientes.
+La entidad Camion y el enum EstadoCamion estan implementados. Hibernate
+crea la tabla camiones al iniciar. Los endpoints CRUD estan pendientes.
 
 ## Alcance del CRUD
 
@@ -17,7 +18,7 @@ y eliminar. Tambien permitira consultar por estado y por conductor asignado.
 Los datos se guardaran en PostgreSQL nativo, en `flotas_db`, tabla `camiones`.
 
 Los campos y reglas siguientes son decisiones de este proyecto. Describen
-lo que implementaremos; los endpoints y la persistencia todavia estan pendientes.
+lo que implementaremos en la API; los endpoints y sus reglas estan pendientes.
 
 ## Campos previstos del camion
 
@@ -171,8 +172,9 @@ psql -h localhost -U postgres -d flotas_db
 ```
 
 Dentro de psql, `SELECT current_database();` debe devolver `flotas_db`.
-Usar `\dt` para listar tablas y `\q` para salir. Hibernate creara la tabla
-de camiones cuando se incorpore la entidad en el paso 6.
+Usar `\dt` para listar tablas y `\q` para salir. Hibernate crea la tabla
+`camiones` a partir de la entidad implementada al iniciar la aplicacion.
+Dentro de psql, `\d camiones` muestra sus columnas y restricciones.
 
 ## Compilar y ejecutar
 
@@ -207,6 +209,6 @@ vez y detenerla con Ctrl+C. Los endpoints CRUD todavia estan pendientes.
 
 ## Proximos pasos
 
-Crear la entidad Camion y continuar con el repositorio, DTO y endpoints
-del CRUD y las consultas definidas en esta guia.
+Continuar con el repositorio, DTO y endpoints del CRUD y las consultas
+definidas en esta guia.
 Despues se agregaran pruebas automatizadas y una coleccion Postman.
