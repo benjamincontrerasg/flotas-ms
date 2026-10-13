@@ -86,6 +86,14 @@ public class CamionService {
                 guardado.getCapacidadKg(), guardado.getEstado(), guardado.getConductorId());
     }
 
+    public void eliminar(Long id) {
+        Optional<Camion> resultado = repository.findById(id);
+        if (resultado.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Camion no encontrado");
+        }
+        repository.delete(resultado.get());
+    }
+
     private void validarDatos(CamionRequest datos) {
         if (datos.getPatente() == null || datos.getPatente().trim().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La patente es obligatoria");

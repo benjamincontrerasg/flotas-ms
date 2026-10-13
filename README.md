@@ -14,7 +14,8 @@ guardar, listar, consultar y eliminar camiones. CamionRequest y CamionResponse
 definen los datos de entrada y salida. POST /camiones ya permite crear camiones
 y guardarlos en PostgreSQL. GET /camiones permite listar; los filtros por
 estado y conductor tambien estan implementados. GET /camiones/{id} consulta
-un camion por ID y PUT /camiones/{id} guarda sus cambios. DELETE esta pendiente.
+un camion por ID, PUT /camiones/{id} guarda sus cambios y DELETE /camiones/{id}
+lo elimina. Las operaciones del CRUD y los filtros estan implementados.
 
 ## Alcance del CRUD
 
@@ -23,8 +24,8 @@ y eliminar. Tambien permitira consultar por estado y por conductor asignado.
 Los datos se guardaran en PostgreSQL nativo, en `flotas_db`, tabla `camiones`.
 
 Los campos y reglas siguientes son decisiones de este proyecto. Describen
-lo que implementaremos en la API. POST, las consultas GET y PUT estan implementados; eliminacion y las
-validaciones completas estan pendientes.
+lo que implementaremos en la API. Las operaciones CRUD y los filtros estan implementados. Las validaciones
+completas, el control de duplicados con 409 y los errores uniformes estan pendientes.
 
 ## Campos previstos del camion
 
@@ -74,8 +75,7 @@ para la coordinacion entre servicios.
 ## Endpoints previstos
 
 Base local: `http://localhost:8083`. POST /camiones y los GET de listado, estado
-y conductor, junto con GET y PUT /camiones/{id}, estan implementados. DELETE
-se agregara en el paso siguiente.
+y conductor, junto con GET, PUT y DELETE /camiones/{id}, estan implementados.
 
 | Metodo | Ruta | Funcion | Respuesta correcta |
 | --- | --- | --- | --- |
@@ -160,6 +160,19 @@ Un ID inexistente devuelve 404 y no crea un camion nuevo. Patente vacia,
 capacidad ausente, no finita o menor o igual a cero devuelven 400. Un estado
 desconocido, JSON incorrecto o ID no numerico tambien devuelve 400.
 Las validaciones completas y el error 409 por duplicados siguen pendientes.
+
+## Eliminar un camion
+
+Enviar DELETE a `http://localhost:8083/camiones/{id}` con el ID real del
+camion. No requiere body. Si existe, devuelve 204 No Content con cuerpo
+vacio y elimina el registro de PostgreSQL.
+
+Un ID inexistente devuelve 404 Not Found. Consultar un camion eliminado
+por ID o intentar eliminarlo otra vez tambien devuelve 404. Un ID con texto
+o fuera del rango de Long devuelve 400 Bad Request.
+
+La eliminacion afecta al registro de Flota. Las referencias de Rutas deben
+revisarse antes de eliminar camiones usados en pruebas compartidas.
 
 ## Relacion con los otros microservicios
 
@@ -271,7 +284,7 @@ Como alternativa, ejecutar el JAR:
 ```
 
 La aplicacion usa `http://localhost:8083`. Iniciar una sola instancia a la
-vez y detenerla con Ctrl+C. POST, todas las consultas GET y PUT estan disponibles; DELETE esta pendiente.
+vez y detenerla con Ctrl+C. POST, todas las consultas GET, PUT y DELETE estan disponibles.
 
 ## Archivos de desarrollo
 
@@ -282,6 +295,5 @@ vez y detenerla con Ctrl+C. POST, todas las consultas GET y PUT estan disponible
 
 ## Proximos pasos
 
-Implementar eliminacion; despues, validaciones completas, control de
-patentes duplicadas y manejo de errores.
+Completar validaciones, control de patentes duplicadas y manejo de errores.
 Despues se agregaran pruebas automatizadas y una coleccion Postman.

@@ -13,6 +13,7 @@ import com.duoc.flotas_ms.model.EstadoCamion;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 @RestController
@@ -56,5 +57,11 @@ public class CamionController {
     public ResponseEntity<CamionResponse> actualizar(@PathVariable("id") Long id,
             @RequestBody CamionRequest datos) {
         return ResponseEntity.ok(service.actualizar(id, datos));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminar(@PathVariable("id") Long id) {
+        service.eliminar(id);
+        return ResponseEntity.noContent().build();
     }
 }
