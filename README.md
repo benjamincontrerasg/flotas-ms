@@ -25,7 +25,7 @@ Los datos se guardaran en PostgreSQL nativo, en `flotas_db`, tabla `camiones`.
 
 Los campos y reglas siguientes son decisiones de este proyecto. Describen
 lo que implementaremos en la API. Las operaciones CRUD y los filtros estan implementados. Las validaciones de entrada estan implementadas. El control de duplicados con 409 tambien esta implementado.
-El formato uniforme de errores esta pendiente.
+ManejadorErrores centraliza las respuestas de error con RespuestaError.
 
 ## Campos previstos del camion
 
@@ -103,8 +103,7 @@ POST devuelve 201 Created con id, patente, capacidadKg, estado y conductorId.
 La patente se guarda sin espacios exteriores y en mayusculas. Si se omite
 el estado o se envia null, se conserva el valor inicial DISPONIBLE.
 Patente vacia o capacidad ausente, no finita o menor o igual a cero devuelven 400.
-Las restricciones de longitud y conductorId estan implementadas. Los duplicados devuelven 409. El formato uniforme de errores se completara
-en el paso siguiente.
+Las restricciones de longitud y conductorId estan implementadas. Los duplicados devuelven 409. Las respuestas de error usan el formato uniforme documentado mas abajo.
 
 ## Listar y filtrar camiones
 
@@ -192,8 +191,7 @@ sea finita. Omitir estado o conductorId mantiene las reglas ya documentadas
 para POST y PUT.
 
 Los datos invalidos devuelven 400 y no se guardan. Un PUT rechazado por
-validacion conserva los datos anteriores del camion. El formato uniforme
-de errores se implementara en el paso 16.
+validacion conserva los datos anteriores del camion. Los errores de validacion usan el formato uniforme con detalles por campo.
 
 ## Patentes duplicadas
 
@@ -207,6 +205,37 @@ CamionRepository comprueba la existencia antes de guardar. PostgreSQL
 mantiene la restriccion UNIQUE. Si dos peticiones intentan guardar la misma
 patente, la base evita el duplicado y el service convierte ese conflicto
 en una respuesta 409. Los otros errores de persistencia siguen su curso.
+
+## Formato de errores
+
+ManejadorErrores usa `@RestControllerAdvice` para responder con los mismos
+campos en los errores de la API:
+
+```json
+{
+  "estado": 409,
+  "mensaje": "La patente ya esta registrada",
+  "detalles": []
+}
+```
+
+- `estado`: codigo HTTP de la respuesta.
+- `mensaje`: descripcion del problema.
+- `detalles`: errores de validacion por campo; vacio en los otros casos.
+
+| Estado | Motivo |
+| --- | --- |
+| 400 | Datos invalidos, JSON incorrecto, estado desconocido o parametros invalidos. |
+| 404 | Camion o recurso inexistente. |
+| 409 | Patente duplicada al crear o actualizar. |
+| 405 | Metodo HTTP no permitido; conserva el encabezado Allow. |
+| 415 | Tipo de contenido incompatible. |
+| 500 | Error inesperado; mensaje generico y detalles tecnicos en los logs. |
+
+Las validaciones de CamionRequest devuelven mensajes como
+`patente: La patente es obligatoria` dentro de detalles. El orden de estos
+mensajes no esta definido. Los errores inesperados no devuelven sus
+excepciones internas al cliente.
 
 ## Relacion con los otros microservicios
 
@@ -226,7 +255,7 @@ borrar camiones usados en pruebas compartidas, revisar sus referencias con Rutas
 - `service`: operaciones y reglas de flota.
 - `repository`: CamionRepository proporciona acceso a PostgreSQL con JpaRepository.
 - `model`: entidad Camion y enum EstadoCamion.
-- `dto`: CamionRequest para entrada y CamionResponse para respuesta. El DTO de errores se agregara mas adelante.
+- `dto`: CamionRequest para entrada, CamionResponse para respuesta y RespuestaError para errores.
 - `exception`: manejo centralizado de errores.
 
 ## Tecnologias
@@ -329,5 +358,5 @@ vez y detenerla con Ctrl+C. POST, todas las consultas GET, PUT y DELETE estan di
 
 ## Proximos pasos
 
-Completar el manejo uniforme de errores.
-Despues se agregaran pruebas automatizadas y una coleccion Postman.
+Agregar pruebas unitarias y de integracion, una coleccion Postman y
+completar la guia de ejecucion del avance.
