@@ -9,7 +9,9 @@ El proyecto compila y genera un JAR. Incluye Spring Boot, Maven Wrapper,
 JPA, validacion, el driver de PostgreSQL y la configuracion del puerto 8083.
 La conexion a PostgreSQL nativo usa flotas_db y configuracion local.
 La entidad Camion y el enum EstadoCamion estan implementados. Hibernate
-crea la tabla camiones al iniciar. Los endpoints CRUD estan pendientes.
+crea la tabla camiones al iniciar. CamionRepository usa JpaRepository para
+guardar, listar, consultar y eliminar camiones. Los DTO y endpoints CRUD
+estan pendientes.
 
 ## Alcance del CRUD
 
@@ -104,7 +106,7 @@ borrar camiones usados en pruebas compartidas, revisar sus referencias con Rutas
 
 - `controller`: endpoints REST de camiones.
 - `service`: operaciones y reglas de flota.
-- `repository`: acceso a PostgreSQL con JpaRepository.
+- `repository`: CamionRepository proporciona acceso a PostgreSQL con JpaRepository.
 - `model`: entidad Camion y enum EstadoCamion.
 - `dto`: datos de entrada, respuesta y errores.
 - `exception`: manejo centralizado de errores.
@@ -209,6 +211,6 @@ vez y detenerla con Ctrl+C. Los endpoints CRUD todavia estan pendientes.
 
 ## Proximos pasos
 
-Continuar con el repositorio, DTO y endpoints del CRUD y las consultas
+Continuar con los DTO y endpoints del CRUD y las consultas
 definidas en esta guia.
 Despues se agregaran pruebas automatizadas y una coleccion Postman.
