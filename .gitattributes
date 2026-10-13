@@ -1,0 +1,5 @@
+# Usar finales de linea consistentes en los archivos de texto
+* text=auto eol=lf
+
+# El script de Windows utiliza CRLF
+mvnw.cmd text eol=crlf

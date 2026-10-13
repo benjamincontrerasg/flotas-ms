@@ -2,3 +2,17 @@
 /target/
 *.class
 *.log
+
+# Configuracion local de los editores
+/.idea/
+/.vscode/
+*.iml
+/.classpath
+/.project
+/.settings/
+
+# Variables y credenciales locales
+.env
+.env.*
+!.env.example
+/application-local.properties
