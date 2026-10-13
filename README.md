@@ -24,8 +24,8 @@ y eliminar. Tambien permitira consultar por estado y por conductor asignado.
 Los datos se guardaran en PostgreSQL nativo, en `flotas_db`, tabla `camiones`.
 
 Los campos y reglas siguientes son decisiones de este proyecto. Describen
-lo que implementaremos en la API. Las operaciones CRUD y los filtros estan implementados. Las validaciones
-completas, el control de duplicados con 409 y los errores uniformes estan pendientes.
+lo que implementaremos en la API. Las operaciones CRUD y los filtros estan implementados. Las validaciones de entrada estan implementadas. El control de duplicados
+con 409 y los errores uniformes estan pendientes.
 
 ## Campos previstos del camion
 
@@ -41,7 +41,8 @@ CamionRequest recibe patente, capacidadKg, estado y conductorId. No incluye
 un campo ID. Estado y conductorId pueden quedar null para que el service
 aplique las reglas previstas en creacion y actualizacion.
 CamionResponse incluye los cinco campos de la tabla anterior.
-El service comprueba patente obligatoria y capacidad finita mayor que cero. Las validaciones completas de los DTO se agregaran en el paso 14.
+POST y PUT validan CamionRequest con @Valid. El service tambien comprueba
+patente obligatoria y capacidad finita mayor que cero.
 
 ## Estados previstos
 
@@ -102,8 +103,8 @@ POST devuelve 201 Created con id, patente, capacidadKg, estado y conductorId.
 La patente se guarda sin espacios exteriores y en mayusculas. Si se omite
 el estado o se envia null, se conserva el valor inicial DISPONIBLE.
 Patente vacia o capacidad ausente, no finita o menor o igual a cero devuelven 400.
-Las longitudes, conductorId, duplicados y errores uniformes se completaran
-en los pasos de validacion y manejo de errores.
+Las restricciones de longitud y conductorId estan implementadas. El control
+de duplicados con 409 y los errores uniformes se completaran en los pasos siguientes.
 
 ## Listar y filtrar camiones
 
@@ -159,7 +160,8 @@ Si se omite conductorId o se envia null, quita la asignacion anterior.
 Un ID inexistente devuelve 404 y no crea un camion nuevo. Patente vacia,
 capacidad ausente, no finita o menor o igual a cero devuelven 400. Un estado
 desconocido, JSON incorrecto o ID no numerico tambien devuelve 400.
-Las validaciones completas y el error 409 por duplicados siguen pendientes.
+Las validaciones de entrada estan implementadas; el error 409 por duplicados
+sigue pendiente.
 
 ## Eliminar un camion
 
@@ -173,6 +175,25 @@ o fuera del rango de Long devuelve 400 Bad Request.
 
 La eliminacion afecta al registro de Flota. Las referencias de Rutas deben
 revisarse antes de eliminar camiones usados en pruebas compartidas.
+
+## Validaciones de entrada
+
+POST y PUT usan `@Valid` con las restricciones de CamionRequest:
+
+- Patente: obligatoria, hasta 10 caracteres despues de quitar espacios
+  exteriores y convertir a mayusculas.
+- Capacidad: obligatoria, numero finito mayor que cero.
+- ConductorId: opcional; si se indica, debe ser un Long mayor que cero.
+- Estado: opcional; si se indica, debe ser DISPONIBLE, EN_RUTA o MANTENCION.
+
+Las anotaciones usadas son `@NotBlank`, `@Size`, `@NotNull` y `@Positive`.
+El enum valida los estados recibidos y el service comprueba que la capacidad
+sea finita. Omitir estado o conductorId mantiene las reglas ya documentadas
+para POST y PUT.
+
+Los datos invalidos devuelven 400 y no se guardan. Un PUT rechazado por
+validacion conserva los datos anteriores del camion. El formato uniforme
+de errores se implementara en el paso 16.
 
 ## Relacion con los otros microservicios
 
@@ -295,5 +316,5 @@ vez y detenerla con Ctrl+C. POST, todas las consultas GET, PUT y DELETE estan di
 
 ## Proximos pasos
 
-Completar validaciones, control de patentes duplicadas y manejo de errores.
+Completar el control de patentes duplicadas y el manejo de errores.
 Despues se agregaran pruebas automatizadas y una coleccion Postman.

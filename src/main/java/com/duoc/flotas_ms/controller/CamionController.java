@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.duoc.flotas_ms.model.EstadoCamion;
 import java.util.List;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -27,7 +28,7 @@ public class CamionController {
     }
 
     @PostMapping
-    public ResponseEntity<CamionResponse> crear(@RequestBody CamionRequest datos) {
+    public ResponseEntity<CamionResponse> crear(@Valid @RequestBody CamionRequest datos) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.crear(datos));
     }
 
@@ -55,7 +56,7 @@ public class CamionController {
 
     @PutMapping("/{id}")
     public ResponseEntity<CamionResponse> actualizar(@PathVariable("id") Long id,
-            @RequestBody CamionRequest datos) {
+            @Valid @RequestBody CamionRequest datos) {
         return ResponseEntity.ok(service.actualizar(id, datos));
     }
 
