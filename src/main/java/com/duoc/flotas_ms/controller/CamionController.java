@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.duoc.flotas_ms.model.EstadoCamion;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 @RestController
@@ -49,5 +50,11 @@ public class CamionController {
     @GetMapping("/{id}")
     public ResponseEntity<CamionResponse> buscarPorId(@PathVariable("id") Long id) {
         return ResponseEntity.ok(service.buscarPorId(id));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<CamionResponse> actualizar(@PathVariable("id") Long id,
+            @RequestBody CamionRequest datos) {
+        return ResponseEntity.ok(service.actualizar(id, datos));
     }
 }

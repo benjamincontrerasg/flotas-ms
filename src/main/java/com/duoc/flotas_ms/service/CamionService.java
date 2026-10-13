@@ -23,14 +23,7 @@ public class CamionService {
     }
 
     public CamionResponse crear(CamionRequest datos) {
-        if (datos.getPatente() == null || datos.getPatente().trim().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La patente es obligatoria");
-        }
-        if (datos.getCapacidadKg() == null || !Double.isFinite(datos.getCapacidadKg())
-                || datos.getCapacidadKg() <= 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "La capacidad debe ser un numero mayor que cero");
-        }
+        validarDatos(datos);
 
         Camion camion = new Camion();
         camion.setPatente(datos.getPatente().trim().toUpperCase(Locale.ROOT));
@@ -70,6 +63,38 @@ public class CamionService {
         Camion camion = resultado.get();
         return new CamionResponse(camion.getId(), camion.getPatente(),
                 camion.getCapacidadKg(), camion.getEstado(), camion.getConductorId());
+    }
+
+    public CamionResponse actualizar(Long id, CamionRequest datos) {
+        validarDatos(datos);
+
+        Optional<Camion> resultado = repository.findById(id);
+        if (resultado.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Camion no encontrado");
+        }
+
+        Camion camion = resultado.get();
+        camion.setPatente(datos.getPatente().trim().toUpperCase(Locale.ROOT));
+        camion.setCapacidadKg(datos.getCapacidadKg());
+        if (datos.getEstado() != null) {
+            camion.setEstado(datos.getEstado());
+        }
+        camion.setConductorId(datos.getConductorId());
+
+        Camion guardado = repository.save(camion);
+        return new CamionResponse(guardado.getId(), guardado.getPatente(),
+                guardado.getCapacidadKg(), guardado.getEstado(), guardado.getConductorId());
+    }
+
+    private void validarDatos(CamionRequest datos) {
+        if (datos.getPatente() == null || datos.getPatente().trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La patente es obligatoria");
+        }
+        if (datos.getCapacidadKg() == null || !Double.isFinite(datos.getCapacidadKg())
+                || datos.getCapacidadKg() <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "La capacidad debe ser un numero mayor que cero");
+        }
     }
 
     private List<CamionResponse> crearRespuestas(List<Camion> camiones) {

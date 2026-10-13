@@ -14,7 +14,7 @@ guardar, listar, consultar y eliminar camiones. CamionRequest y CamionResponse
 definen los datos de entrada y salida. POST /camiones ya permite crear camiones
 y guardarlos en PostgreSQL. GET /camiones permite listar; los filtros por
 estado y conductor tambien estan implementados. GET /camiones/{id} consulta
-un camion por ID. PUT y DELETE estan pendientes.
+un camion por ID y PUT /camiones/{id} guarda sus cambios. DELETE esta pendiente.
 
 ## Alcance del CRUD
 
@@ -23,8 +23,8 @@ y eliminar. Tambien permitira consultar por estado y por conductor asignado.
 Los datos se guardaran en PostgreSQL nativo, en `flotas_db`, tabla `camiones`.
 
 Los campos y reglas siguientes son decisiones de este proyecto. Describen
-lo que implementaremos en la API. POST, listado, filtros y consulta por ID estan implementados; actualizacion,
-eliminacion y las validaciones completas estan pendientes.
+lo que implementaremos en la API. POST, las consultas GET y PUT estan implementados; eliminacion y las
+validaciones completas estan pendientes.
 
 ## Campos previstos del camion
 
@@ -74,8 +74,8 @@ para la coordinacion entre servicios.
 ## Endpoints previstos
 
 Base local: `http://localhost:8083`. POST /camiones y los GET de listado, estado
-y conductor, junto con GET /camiones/{id}, estan implementados. PUT y DELETE
-se agregaran en los pasos siguientes.
+y conductor, junto con GET y PUT /camiones/{id}, estan implementados. DELETE
+se agregara en el paso siguiente.
 
 | Metodo | Ruta | Funcion | Respuesta correcta |
 | --- | --- | --- | --- |
@@ -136,6 +136,30 @@ capacidadKg, estado y conductorId del registro guardado en PostgreSQL.
 
 Un ID numerico inexistente devuelve 404 Not Found. Un ID con texto o fuera
 del rango de Long devuelve 400 Bad Request. Esta consulta no modifica datos.
+
+## Actualizar un camion
+
+Enviar PUT a `http://localhost:8083/camiones/{id}` con el ID real del camion,
+`Content-Type: application/json` y el body:
+
+```json
+{
+  "patente": "ABCD12",
+  "capacidadKg": 4000.0,
+  "estado": "MANTENCION",
+  "conductorId": null
+}
+```
+
+Devuelve 200 OK con los datos actualizados. Conserva el ID, normaliza la
+patente y guarda los cambios en PostgreSQL. Patente y capacidadKg son
+obligatorias. Si se omite estado o se envia null, conserva el estado anterior.
+Si se omite conductorId o se envia null, quita la asignacion anterior.
+
+Un ID inexistente devuelve 404 y no crea un camion nuevo. Patente vacia,
+capacidad ausente, no finita o menor o igual a cero devuelven 400. Un estado
+desconocido, JSON incorrecto o ID no numerico tambien devuelve 400.
+Las validaciones completas y el error 409 por duplicados siguen pendientes.
 
 ## Relacion con los otros microservicios
 
@@ -247,7 +271,7 @@ Como alternativa, ejecutar el JAR:
 ```
 
 La aplicacion usa `http://localhost:8083`. Iniciar una sola instancia a la
-vez y detenerla con Ctrl+C. POST y todas las consultas GET estan disponibles; PUT y DELETE estan pendientes.
+vez y detenerla con Ctrl+C. POST, todas las consultas GET y PUT estan disponibles; DELETE esta pendiente.
 
 ## Archivos de desarrollo
 
@@ -258,6 +282,6 @@ vez y detenerla con Ctrl+C. POST y todas las consultas GET estan disponibles; PU
 
 ## Proximos pasos
 
-Implementar actualizacion y eliminacion; despues, validaciones completas
-y manejo de errores.
+Implementar eliminacion; despues, validaciones completas, control de
+patentes duplicadas y manejo de errores.
 Despues se agregaran pruebas automatizadas y una coleccion Postman.
