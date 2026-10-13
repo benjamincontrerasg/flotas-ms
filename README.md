@@ -5,9 +5,10 @@ a domicilio.
 
 ## Estado actual
 
-El proyecto base compila y genera un JAR. Incluye Spring Boot, Maven Wrapper
-y la configuracion del puerto 8083. Los endpoints de camiones y la conexion
-a PostgreSQL se implementaran en los pasos siguientes.
+El proyecto compila y genera un JAR. Incluye Spring Boot, Maven Wrapper,
+JPA, validacion, el driver de PostgreSQL y la configuracion del puerto 8083.
+Los endpoints de camiones y la conexion a PostgreSQL estan pendientes.
+Antes de iniciar la aplicacion hay que configurar PostgreSQL en el paso 5.
 
 ## Alcance del CRUD
 
@@ -111,6 +112,8 @@ borrar camiones usados en pruebas compartidas, revisar sus referencias con Rutas
 
 - Java 21.
 - Spring Boot 4.0.5.
+- Spring Data JPA y Jakarta Validation.
+- Driver de PostgreSQL para la persistencia.
 - Maven mediante el Wrapper incluido.
 
 ## Requisitos
@@ -159,6 +162,6 @@ vez y detenerla con Ctrl+C. Los endpoints CRUD todavia estan pendientes.
 
 ## Proximos pasos
 
-Incorporar persistencia y validacion, configurar PostgreSQL nativo e
+Configurar PostgreSQL nativo e
 implementar los endpoints del CRUD y las consultas definidas en esta guia.
 Despues se agregaran pruebas automatizadas y una coleccion Postman.
