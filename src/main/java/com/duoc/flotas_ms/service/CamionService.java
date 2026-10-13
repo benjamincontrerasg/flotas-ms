@@ -11,6 +11,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.duoc.flotas_ms.model.EstadoCamion;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class CamionService {
@@ -58,6 +59,17 @@ public class CamionService {
                     "El ID del conductor debe ser mayor que cero");
         }
         return crearRespuestas(repository.findByConductorId(conductorId));
+    }
+
+    public CamionResponse buscarPorId(Long id) {
+        Optional<Camion> resultado = repository.findById(id);
+        if (resultado.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Camion no encontrado");
+        }
+
+        Camion camion = resultado.get();
+        return new CamionResponse(camion.getId(), camion.getPatente(),
+                camion.getCapacidadKg(), camion.getEstado(), camion.getConductorId());
     }
 
     private List<CamionResponse> crearRespuestas(List<Camion> camiones) {

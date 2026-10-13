@@ -13,8 +13,8 @@ crea la tabla camiones al iniciar. CamionRepository usa JpaRepository para
 guardar, listar, consultar y eliminar camiones. CamionRequest y CamionResponse
 definen los datos de entrada y salida. POST /camiones ya permite crear camiones
 y guardarlos en PostgreSQL. GET /camiones permite listar; los filtros por
-estado y conductor tambien estan implementados. Consulta por ID, PUT y
-DELETE estan pendientes.
+estado y conductor tambien estan implementados. GET /camiones/{id} consulta
+un camion por ID. PUT y DELETE estan pendientes.
 
 ## Alcance del CRUD
 
@@ -23,7 +23,7 @@ y eliminar. Tambien permitira consultar por estado y por conductor asignado.
 Los datos se guardaran en PostgreSQL nativo, en `flotas_db`, tabla `camiones`.
 
 Los campos y reglas siguientes son decisiones de este proyecto. Describen
-lo que implementaremos en la API. POST, listado y filtros estan implementados; consulta por ID, actualizacion,
+lo que implementaremos en la API. POST, listado, filtros y consulta por ID estan implementados; actualizacion,
 eliminacion y las validaciones completas estan pendientes.
 
 ## Campos previstos del camion
@@ -74,8 +74,8 @@ para la coordinacion entre servicios.
 ## Endpoints previstos
 
 Base local: `http://localhost:8083`. POST /camiones y los GET de listado, estado
-y conductor estan implementados. GET por ID, PUT y DELETE se agregaran
-en los pasos siguientes.
+y conductor, junto con GET /camiones/{id}, estan implementados. PUT y DELETE
+se agregaran en los pasos siguientes.
 
 | Metodo | Ruta | Funcion | Respuesta correcta |
 | --- | --- | --- | --- |
@@ -127,6 +127,15 @@ camiones asignados devuelve una lista vacia.
 
 El filtro consulta el conductorId guardado en Flota. La comprobacion del
 usuario y su rol en el servicio Usuarios sigue pendiente.
+
+## Consultar un camion por ID
+
+Enviar GET a `http://localhost:8083/camiones/{id}`, reemplazando `{id}` por
+el ID generado al crear un camion. Devuelve 200 OK con id, patente,
+capacidadKg, estado y conductorId del registro guardado en PostgreSQL.
+
+Un ID numerico inexistente devuelve 404 Not Found. Un ID con texto o fuera
+del rango de Long devuelve 400 Bad Request. Esta consulta no modifica datos.
 
 ## Relacion con los otros microservicios
 
@@ -238,7 +247,7 @@ Como alternativa, ejecutar el JAR:
 ```
 
 La aplicacion usa `http://localhost:8083`. Iniciar una sola instancia a la
-vez y detenerla con Ctrl+C. POST, listado y filtros estan disponibles; GET por ID, PUT y DELETE estan pendientes.
+vez y detenerla con Ctrl+C. POST y todas las consultas GET estan disponibles; PUT y DELETE estan pendientes.
 
 ## Archivos de desarrollo
 
@@ -249,6 +258,6 @@ vez y detenerla con Ctrl+C. POST, listado y filtros estan disponibles; GET por I
 
 ## Proximos pasos
 
-Implementar consulta por ID; despues, actualizacion y
-eliminacion, validaciones completas y manejo de errores.
+Implementar actualizacion y eliminacion; despues, validaciones completas
+y manejo de errores.
 Despues se agregaran pruebas automatizadas y una coleccion Postman.

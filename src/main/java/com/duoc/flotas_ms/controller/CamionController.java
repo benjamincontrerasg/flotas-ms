@@ -45,4 +45,9 @@ public class CamionController {
             @PathVariable("conductorId") Long conductorId) {
         return ResponseEntity.ok(service.buscarPorConductor(conductorId));
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<CamionResponse> buscarPorId(@PathVariable("id") Long id) {
+        return ResponseEntity.ok(service.buscarPorId(id));
+    }
 }
