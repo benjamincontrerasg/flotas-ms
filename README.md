@@ -26,6 +26,7 @@ Los datos se guardaran en PostgreSQL nativo, en `flotas_db`, tabla `camiones`.
 Los campos y reglas siguientes son decisiones de este proyecto. Describen
 lo que implementaremos en la API. Las operaciones CRUD y los filtros estan implementados. Las validaciones de entrada estan implementadas. El control de duplicados con 409 tambien esta implementado.
 ManejadorErrores centraliza las respuestas de error con RespuestaError.
+El proyecto incluye 27 pruebas unitarias del service y de las validaciones.
 
 ## Campos previstos del camion
 
@@ -237,6 +238,27 @@ Las validaciones de CamionRequest devuelven mensajes como
 mensajes no esta definido. Los errores inesperados no devuelven sus
 excepciones internas al cliente.
 
+## Pruebas unitarias
+
+Ejecutar desde la raiz del proyecto con JDK 21:
+
+```powershell
+.\mvnw.cmd test
+```
+
+CamionServiceTest contiene 19 pruebas de CRUD, filtros, normalizacion,
+patentes duplicadas, conservacion de ID y estado, conductor opcional,
+datos obligatorios y capacidad finita. Tambien verifica que el conflicto
+SQL 23505 se convierta en 409 y que otros errores de persistencia se propaguen.
+Mockito simula CamionRepository; estas pruebas no conectan a PostgreSQL.
+
+CamionRequestTest contiene 8 pruebas con el validador real de Jakarta
+Validation: patente obligatoria, limite de longitud despues de normalizar,
+capacidad positiva, conductor positivo cuando se indica y campos opcionales.
+
+Las 27 pruebas usan JUnit y no necesitan Spring Boot iniciado ni Docker.
+Las pruebas de API y persistencia con PostgreSQL se agregaran en el paso 18.
+
 ## Relacion con los otros microservicios
 
 Rutas guarda `camionId` como Long. Por eso el ID de Camion tambien sera Long.
@@ -358,5 +380,5 @@ vez y detenerla con Ctrl+C. POST, todas las consultas GET, PUT y DELETE estan di
 
 ## Proximos pasos
 
-Agregar pruebas unitarias y de integracion, una coleccion Postman y
+Agregar pruebas de integracion con PostgreSQL, una coleccion Postman y
 completar la guia de ejecucion del avance.
