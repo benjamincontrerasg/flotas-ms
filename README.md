@@ -10,8 +10,8 @@ JPA, validacion, el driver de PostgreSQL y la configuracion del puerto 8083.
 La conexion a PostgreSQL nativo usa flotas_db y configuracion local.
 La entidad Camion y el enum EstadoCamion estan implementados. Hibernate
 crea la tabla camiones al iniciar. CamionRepository usa JpaRepository para
-guardar, listar, consultar y eliminar camiones. Los DTO y endpoints CRUD
-estan pendientes.
+guardar, listar, consultar y eliminar camiones. CamionRequest y CamionResponse
+definen los datos de entrada y salida. Los endpoints CRUD estan pendientes.
 
 ## Alcance del CRUD
 
@@ -32,9 +32,11 @@ lo que implementaremos en la API; los endpoints y sus reglas estan pendientes.
 | estado | EstadoCamion (enum) | DISPONIBLE, EN_RUTA o MANTENCION. |
 | conductorId | Long | Opcional; si se indica, debe ser mayor que cero. |
 
-El DTO de entrada recibira patente, capacidadKg, estado y conductorId.
-El ID se obtendra de la ruta para consultar, actualizar o eliminar; se
-generara en el servidor al crear. La respuesta incluira los cinco campos.
+CamionRequest recibe patente, capacidadKg, estado y conductorId. No incluye
+un campo ID. Estado y conductorId pueden quedar null para que el service
+aplique las reglas previstas en creacion y actualizacion.
+CamionResponse incluye los cinco campos de la tabla anterior.
+Las validaciones de entrada se agregaran en el paso 14.
 
 ## Estados previstos
 
@@ -108,7 +110,7 @@ borrar camiones usados en pruebas compartidas, revisar sus referencias con Rutas
 - `service`: operaciones y reglas de flota.
 - `repository`: CamionRepository proporciona acceso a PostgreSQL con JpaRepository.
 - `model`: entidad Camion y enum EstadoCamion.
-- `dto`: datos de entrada, respuesta y errores.
+- `dto`: CamionRequest para entrada y CamionResponse para respuesta. El DTO de errores se agregara mas adelante.
 - `exception`: manejo centralizado de errores.
 
 ## Tecnologias
@@ -211,6 +213,6 @@ vez y detenerla con Ctrl+C. Los endpoints CRUD todavia estan pendientes.
 
 ## Proximos pasos
 
-Continuar con los DTO y endpoints del CRUD y las consultas
+Continuar con el service y los endpoints del CRUD y las consultas
 definidas en esta guia.
 Despues se agregaran pruebas automatizadas y una coleccion Postman.
