@@ -423,6 +423,16 @@ Como alternativa, ejecutar el JAR:
 La aplicacion usa `http://localhost:8083`. Iniciar una sola instancia a la
 vez y detenerla con Ctrl+C. POST, todas las consultas GET, PUT y DELETE estan disponibles.
 
+## Coleccion Postman
+
+La [coleccion de Flota](postman/Flota.postman_collection.json) incluye 40
+peticiones para el CRUD, los filtros y los errores. Guarda los IDs y limpia
+los dos camiones que crea. Consultar la [guia de Postman](postman/README.md)
+para importarla y ejecutarla en orden.
+
+Se verifico con Newman y PostgreSQL de pruebas: 40 peticiones y 147
+comprobaciones aprobadas.
+
 ## Archivos de desarrollo
 
 - `.gitignore` excluye archivos generados, configuraciones locales de IDE
@@ -432,4 +442,4 @@ vez y detenerla con Ctrl+C. POST, todas las consultas GET, PUT y DELETE estan di
 
 ## Proximos pasos
 
-Agregar la coleccion Postman y completar la guia de ejecucion del avance.
+Completar la guia de ejecucion del avance.

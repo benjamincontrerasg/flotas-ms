@@ -1,0 +1,1412 @@
+{
+  "info": {
+    "name": "RutaLimpia - Flota",
+    "description": "40 peticiones de CRUD, filtros y errores. Ejecutar toda la coleccion en orden. Crea dos camiones con patentes generadas y al terminar elimina solo sus IDs. Si se interrumpe, completar 04 Limpieza con los IDs guardados antes de reiniciar. No contiene contrasenas.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8083",
+      "type": "string"
+    },
+    {
+      "key": "camion_a_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "camion_b_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "patente_a",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "patente_b",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "patente_actualizada",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "patente_minusculas",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "conductor_prueba",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "conductor_sin_camiones",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Crear y consultar",
+      "item": [
+        {
+          "name": "01 Crear camion A sin conductor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/camiones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patente\": \" {{patente_minusculas}} \",\n  \"capacidadKg\": 2500\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const corrida = pm.variables.replaceIn(\"{{$guid}}\").replace(/-/g, \"\");",
+                  "pm.collectionVariables.set(\"patente_a\", \"PA\" + corrida.substring(0, 8).toUpperCase());",
+                  "pm.collectionVariables.set(\"patente_b\", \"PB\" + corrida.substring(0, 8).toUpperCase());",
+                  "pm.collectionVariables.set(\"patente_actualizada\", \"PC\" + corrida.substring(0, 8).toUpperCase());",
+                  "pm.collectionVariables.set(\"patente_minusculas\", pm.collectionVariables.get(\"patente_a\").toLowerCase());",
+                  "pm.collectionVariables.set(\"conductor_prueba\", String(200000000 + parseInt(corrida.substring(0, 6), 16)));",
+                  "pm.collectionVariables.set(\"camion_a_id\", \"\");",
+                  "pm.collectionVariables.set(\"camion_b_id\", \"\");",
+                  "pm.collectionVariables.set(\"conductor_sin_camiones\", \"\");"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "const camion = pm.response.json();",
+                  "pm.test(\"Datos del camion\", function () {",
+                  "    pm.expect(camion.id).to.be.a(\"number\").and.above(0);",
+                  "    pm.expect(camion.patente).to.eql(pm.collectionVariables.get(\"patente_a\"));",
+                  "    pm.expect(camion.capacidadKg).to.eql(2500);",
+                  "    pm.expect(camion.estado).to.eql(\"DISPONIBLE\");",
+                  "    pm.expect(camion.conductorId).to.eql(null);",
+                  "});",
+                  "if (pm.response.code === 201 && Number.isInteger(camion.id) && camion.id > 0) {",
+                  "    pm.collectionVariables.set(\"camion_a_id\", String(camion.id));",
+                  "}",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test(\"ID conservado\", function () { pm.expect(String(camion.id)).to.eql(pm.collectionVariables.get(\"camion_a_id\")); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 Crear camion B en ruta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/camiones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patente\": \"{{patente_b}}\",\n  \"capacidadKg\": 1500,\n  \"estado\": \"EN_RUTA\",\n  \"conductorId\": \"{{conductor_prueba}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 201\", function () { pm.response.to.have.status(201); });",
+                  "const camion = pm.response.json();",
+                  "pm.test(\"Datos del camion\", function () {",
+                  "    pm.expect(camion.id).to.be.a(\"number\").and.above(0);",
+                  "    pm.expect(camion.patente).to.eql(pm.collectionVariables.get(\"patente_b\"));",
+                  "    pm.expect(camion.capacidadKg).to.eql(1500);",
+                  "    pm.expect(camion.estado).to.eql(\"EN_RUTA\");",
+                  "    pm.expect(camion.conductorId).to.eql(Number(pm.collectionVariables.get(\"conductor_prueba\")));",
+                  "});",
+                  "if (pm.response.code === 201 && Number.isInteger(camion.id) && camion.id > 0) {",
+                  "    pm.collectionVariables.set(\"camion_b_id\", String(camion.id));",
+                  "}",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test(\"ID conservado\", function () { pm.expect(String(camion.id)).to.eql(pm.collectionVariables.get(\"camion_b_id\")); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 Listar camiones y preparar filtro vacio",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/camiones"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "const camiones = pm.response.json();",
+                  "pm.test(\"Respuesta es una lista\", function () { pm.expect(camiones).to.be.an(\"array\"); });",
+                  "const ids = camiones.map(function (camion) { return String(camion.id); });",
+                  "pm.test(\"Incluye camion a\", function () { pm.expect(ids).to.include(pm.collectionVariables.get(\"camion_a_id\")); });",
+                  "pm.test(\"Incluye camion b\", function () { pm.expect(ids).to.include(pm.collectionVariables.get(\"camion_b_id\")); });",
+                  "let candidato = 1;",
+                  "const conductores = camiones.map(function (camion) { return String(camion.conductorId); });",
+                  "while (conductores.includes(String(candidato))) { candidato++; }",
+                  "pm.collectionVariables.set(\"conductor_sin_camiones\", String(candidato));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 Consultar camion A por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/camiones/{{camion_a_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "const camion = pm.response.json();",
+                  "pm.test(\"Datos del camion\", function () {",
+                  "    pm.expect(camion.id).to.be.a(\"number\").and.above(0);",
+                  "    pm.expect(camion.patente).to.eql(pm.collectionVariables.get(\"patente_a\"));",
+                  "    pm.expect(camion.capacidadKg).to.eql(2500);",
+                  "    pm.expect(camion.estado).to.eql(\"DISPONIBLE\");",
+                  "    pm.expect(camion.conductorId).to.eql(null);",
+                  "});",
+                  "if (pm.response.code === 201 && Number.isInteger(camion.id) && camion.id > 0) {",
+                  "    pm.collectionVariables.set(\"camion_a_id\", String(camion.id));",
+                  "}",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test(\"ID conservado\", function () { pm.expect(String(camion.id)).to.eql(pm.collectionVariables.get(\"camion_a_id\")); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 Filtrar disponibles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/camiones/estado/DISPONIBLE"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "const camiones = pm.response.json();",
+                  "pm.test(\"Respuesta es una lista\", function () { pm.expect(camiones).to.be.an(\"array\"); });",
+                  "const ids = camiones.map(function (camion) { return String(camion.id); });",
+                  "pm.test(\"Incluye camion a\", function () { pm.expect(ids).to.include(pm.collectionVariables.get(\"camion_a_id\")); });",
+                  "pm.test(\"Filtro correcto\", function () { pm.expect(camiones.every(function (camion) { return camion.estado === \"DISPONIBLE\"; })).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06 Filtrar camiones en ruta",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/camiones/estado/EN_RUTA"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "const camiones = pm.response.json();",
+                  "pm.test(\"Respuesta es una lista\", function () { pm.expect(camiones).to.be.an(\"array\"); });",
+                  "const ids = camiones.map(function (camion) { return String(camion.id); });",
+                  "pm.test(\"Incluye camion b\", function () { pm.expect(ids).to.include(pm.collectionVariables.get(\"camion_b_id\")); });",
+                  "pm.test(\"Filtro correcto\", function () { pm.expect(camiones.every(function (camion) { return camion.estado === \"EN_RUTA\"; })).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "07 Filtrar por conductor",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/camiones/conductor/{{conductor_prueba}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "const camiones = pm.response.json();",
+                  "pm.test(\"Respuesta es una lista\", function () { pm.expect(camiones).to.be.an(\"array\"); });",
+                  "const ids = camiones.map(function (camion) { return String(camion.id); });",
+                  "pm.test(\"Incluye camion b\", function () { pm.expect(ids).to.include(pm.collectionVariables.get(\"camion_b_id\")); });",
+                  "pm.test(\"Filtro correcto\", function () { pm.expect(camiones.every(function (camion) { return camion.conductorId === Number(pm.collectionVariables.get(\"conductor_prueba\")); })).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "08 Conductor sin camiones devuelve lista vacia",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/camiones/conductor/{{conductor_sin_camiones}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Lista vacia\", function () { pm.expect(pm.response.json()).to.eql([]); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 Casos de error",
+      "item": [
+        {
+          "name": "09 Patente vacia",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/camiones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patente\": \" \",\n  \"capacidadKg\": 1000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 400\", function () { pm.response.to.have.status(400); });",
+                  "const error = pm.response.json();",
+                  "pm.test(\"Formato uniforme de error\", function () {",
+                  "    pm.expect(error.estado).to.eql(pm.response.code);",
+                  "    pm.expect(error.mensaje).to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(error.detalles).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Mensaje esperado\", function () { pm.expect(error.mensaje).to.eql(\"Datos de entrada invalidos\"); });",
+                  "pm.test(\"Detalle de patente\", function () { pm.expect(error.detalles.some(function (detalle) { return detalle.startsWith(\"patente: \"); })).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10 Capacidad obligatoria ausente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/camiones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patente\": \"{{patente_actualizada}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 400\", function () { pm.response.to.have.status(400); });",
+                  "const error = pm.response.json();",
+                  "pm.test(\"Formato uniforme de error\", function () {",
+                  "    pm.expect(error.estado).to.eql(pm.response.code);",
+                  "    pm.expect(error.mensaje).to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(error.detalles).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Mensaje esperado\", function () { pm.expect(error.mensaje).to.eql(\"Datos de entrada invalidos\"); });",
+                  "pm.test(\"Detalle de capacidadKg\", function () { pm.expect(error.detalles.some(function (detalle) { return detalle.startsWith(\"capacidadKg: \"); })).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "11 Capacidad cero",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/camiones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patente\": \"{{patente_actualizada}}\",\n  \"capacidadKg\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 400\", function () { pm.response.to.have.status(400); });",
+                  "const error = pm.response.json();",
+                  "pm.test(\"Formato uniforme de error\", function () {",
+                  "    pm.expect(error.estado).to.eql(pm.response.code);",
+                  "    pm.expect(error.mensaje).to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(error.detalles).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Mensaje esperado\", function () { pm.expect(error.mensaje).to.eql(\"Datos de entrada invalidos\"); });",
+                  "pm.test(\"Detalle de capacidadKg\", function () { pm.expect(error.detalles.some(function (detalle) { return detalle.startsWith(\"capacidadKg: \"); })).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "12 Capacidad negativa",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/camiones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patente\": \"{{patente_actualizada}}\",\n  \"capacidadKg\": -1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 400\", function () { pm.response.to.have.status(400); });",
+                  "const error = pm.response.json();",
+                  "pm.test(\"Formato uniforme de error\", function () {",
+                  "    pm.expect(error.estado).to.eql(pm.response.code);",
+                  "    pm.expect(error.mensaje).to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(error.detalles).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Mensaje esperado\", function () { pm.expect(error.mensaje).to.eql(\"Datos de entrada invalidos\"); });",
+                  "pm.test(\"Detalle de capacidadKg\", function () { pm.expect(error.detalles.some(function (detalle) { return detalle.startsWith(\"capacidadKg: \"); })).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "13 Patente demasiado larga",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/camiones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patente\": \"ABCDEFGHIJK\",\n  \"capacidadKg\": 1000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 400\", function () { pm.response.to.have.status(400); });",
+                  "const error = pm.response.json();",
+                  "pm.test(\"Formato uniforme de error\", function () {",
+                  "    pm.expect(error.estado).to.eql(pm.response.code);",
+                  "    pm.expect(error.mensaje).to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(error.detalles).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Mensaje esperado\", function () { pm.expect(error.mensaje).to.eql(\"Datos de entrada invalidos\"); });",
+                  "pm.test(\"Detalle de patente\", function () { pm.expect(error.detalles.some(function (detalle) { return detalle.startsWith(\"patente: \"); })).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "14 Conductor negativo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/camiones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patente\": \"{{patente_a}}\",\n  \"capacidadKg\": 2500,\n  \"conductorId\": -1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 400\", function () { pm.response.to.have.status(400); });",
+                  "const error = pm.response.json();",
+                  "pm.test(\"Formato uniforme de error\", function () {",
+                  "    pm.expect(error.estado).to.eql(pm.response.code);",
+                  "    pm.expect(error.mensaje).to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(error.detalles).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Mensaje esperado\", function () { pm.expect(error.mensaje).to.eql(\"Datos de entrada invalidos\"); });",
+                  "pm.test(\"Detalle de conductorId\", function () { pm.expect(error.detalles.some(function (detalle) { return detalle.startsWith(\"conductorId: \"); })).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "15 PUT con conductor cero",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/camiones/{{camion_a_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patente\": \"{{patente_a}}\",\n  \"capacidadKg\": 2500,\n  \"conductorId\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 400\", function () { pm.response.to.have.status(400); });",
+                  "const error = pm.response.json();",
+                  "pm.test(\"Formato uniforme de error\", function () {",
+                  "    pm.expect(error.estado).to.eql(pm.response.code);",
+                  "    pm.expect(error.mensaje).to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(error.detalles).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Mensaje esperado\", function () { pm.expect(error.mensaje).to.eql(\"Datos de entrada invalidos\"); });",
+                  "pm.test(\"Detalle de conductorId\", function () { pm.expect(error.detalles.some(function (detalle) { return detalle.startsWith(\"conductorId: \"); })).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "16 Crear patente duplicada con minusculas",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/camiones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patente\": \" {{patente_minusculas}} \",\n  \"capacidadKg\": 1000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 409\", function () { pm.response.to.have.status(409); });",
+                  "const error = pm.response.json();",
+                  "pm.test(\"Formato uniforme de error\", function () {",
+                  "    pm.expect(error.estado).to.eql(pm.response.code);",
+                  "    pm.expect(error.mensaje).to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(error.detalles).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Mensaje esperado\", function () { pm.expect(error.mensaje).to.eql(\"La patente ya esta registrada\"); });",
+                  "pm.test(\"Detalles vacios\", function () { pm.expect(error.detalles).to.eql([]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "17 PUT con patente de otro camion",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/camiones/{{camion_b_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patente\": \"{{patente_a}}\",\n  \"capacidadKg\": 2500\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 409\", function () { pm.response.to.have.status(409); });",
+                  "const error = pm.response.json();",
+                  "pm.test(\"Formato uniforme de error\", function () {",
+                  "    pm.expect(error.estado).to.eql(pm.response.code);",
+                  "    pm.expect(error.mensaje).to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(error.detalles).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Mensaje esperado\", function () { pm.expect(error.mensaje).to.eql(\"La patente ya esta registrada\"); });",
+                  "pm.test(\"Detalles vacios\", function () { pm.expect(error.detalles).to.eql([]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "18 Camion B conserva sus datos tras rechazo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/camiones/{{camion_b_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "const camion = pm.response.json();",
+                  "pm.test(\"Datos del camion\", function () {",
+                  "    pm.expect(camion.id).to.be.a(\"number\").and.above(0);",
+                  "    pm.expect(camion.patente).to.eql(pm.collectionVariables.get(\"patente_b\"));",
+                  "    pm.expect(camion.capacidadKg).to.eql(1500);",
+                  "    pm.expect(camion.estado).to.eql(\"EN_RUTA\");",
+                  "    pm.expect(camion.conductorId).to.eql(Number(pm.collectionVariables.get(\"conductor_prueba\")));",
+                  "});",
+                  "if (pm.response.code === 201 && Number.isInteger(camion.id) && camion.id > 0) {",
+                  "    pm.collectionVariables.set(\"camion_b_id\", String(camion.id));",
+                  "}",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test(\"ID conservado\", function () { pm.expect(String(camion.id)).to.eql(pm.collectionVariables.get(\"camion_b_id\")); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "19 JSON incorrecto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/camiones",
+            "body": {
+              "mode": "raw",
+              "raw": "{",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 400\", function () { pm.response.to.have.status(400); });",
+                  "const error = pm.response.json();",
+                  "pm.test(\"Formato uniforme de error\", function () {",
+                  "    pm.expect(error.estado).to.eql(pm.response.code);",
+                  "    pm.expect(error.mensaje).to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(error.detalles).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Mensaje esperado\", function () { pm.expect(error.mensaje).to.eql(\"El cuerpo debe contener un JSON valido con los campos esperados\"); });",
+                  "pm.test(\"Detalles vacios\", function () { pm.expect(error.detalles).to.eql([]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "20 Estado desconocido en JSON",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/camiones",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patente\": \"{{patente_a}}\",\n  \"capacidadKg\": 2500,\n  \"estado\": \"INVALIDO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 400\", function () { pm.response.to.have.status(400); });",
+                  "const error = pm.response.json();",
+                  "pm.test(\"Formato uniforme de error\", function () {",
+                  "    pm.expect(error.estado).to.eql(pm.response.code);",
+                  "    pm.expect(error.mensaje).to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(error.detalles).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Mensaje esperado\", function () { pm.expect(error.mensaje).to.eql(\"El cuerpo debe contener un JSON valido con los campos esperados\"); });",
+                  "pm.test(\"Detalles vacios\", function () { pm.expect(error.detalles).to.eql([]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "21 ID no numerico",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/camiones/no-numero"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 400\", function () { pm.response.to.have.status(400); });",
+                  "const error = pm.response.json();",
+                  "pm.test(\"Formato uniforme de error\", function () {",
+                  "    pm.expect(error.estado).to.eql(pm.response.code);",
+                  "    pm.expect(error.mensaje).to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(error.detalles).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Mensaje esperado\", function () { pm.expect(error.mensaje).to.eql(\"El parametro de la solicitud tiene un formato invalido\"); });",
+                  "pm.test(\"Detalles vacios\", function () { pm.expect(error.detalles).to.eql([]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "22 Estado desconocido en filtro",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/camiones/estado/INVALIDO"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 400\", function () { pm.response.to.have.status(400); });",
+                  "const error = pm.response.json();",
+                  "pm.test(\"Formato uniforme de error\", function () {",
+                  "    pm.expect(error.estado).to.eql(pm.response.code);",
+                  "    pm.expect(error.mensaje).to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(error.detalles).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Mensaje esperado\", function () { pm.expect(error.mensaje).to.eql(\"El parametro de la solicitud tiene un formato invalido\"); });",
+                  "pm.test(\"Detalles vacios\", function () { pm.expect(error.detalles).to.eql([]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "23 Conductor cero en filtro",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/camiones/conductor/0"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 400\", function () { pm.response.to.have.status(400); });",
+                  "const error = pm.response.json();",
+                  "pm.test(\"Formato uniforme de error\", function () {",
+                  "    pm.expect(error.estado).to.eql(pm.response.code);",
+                  "    pm.expect(error.mensaje).to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(error.detalles).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Mensaje esperado\", function () { pm.expect(error.mensaje).to.eql(\"El ID del conductor debe ser mayor que cero\"); });",
+                  "pm.test(\"Detalles vacios\", function () { pm.expect(error.detalles).to.eql([]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "24 Consultar ID inexistente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/camiones/-1"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 404\", function () { pm.response.to.have.status(404); });",
+                  "const error = pm.response.json();",
+                  "pm.test(\"Formato uniforme de error\", function () {",
+                  "    pm.expect(error.estado).to.eql(pm.response.code);",
+                  "    pm.expect(error.mensaje).to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(error.detalles).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Mensaje esperado\", function () { pm.expect(error.mensaje).to.eql(\"Camion no encontrado\"); });",
+                  "pm.test(\"Detalles vacios\", function () { pm.expect(error.detalles).to.eql([]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "25 PUT con ID inexistente",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/camiones/-1",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patente\": \"{{patente_a}}\",\n  \"capacidadKg\": 2500\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 404\", function () { pm.response.to.have.status(404); });",
+                  "const error = pm.response.json();",
+                  "pm.test(\"Formato uniforme de error\", function () {",
+                  "    pm.expect(error.estado).to.eql(pm.response.code);",
+                  "    pm.expect(error.mensaje).to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(error.detalles).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Mensaje esperado\", function () { pm.expect(error.mensaje).to.eql(\"Camion no encontrado\"); });",
+                  "pm.test(\"Detalles vacios\", function () { pm.expect(error.detalles).to.eql([]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "26 DELETE con ID inexistente",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{base_url}}/camiones/-1"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 404\", function () { pm.response.to.have.status(404); });",
+                  "const error = pm.response.json();",
+                  "pm.test(\"Formato uniforme de error\", function () {",
+                  "    pm.expect(error.estado).to.eql(pm.response.code);",
+                  "    pm.expect(error.mensaje).to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(error.detalles).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Mensaje esperado\", function () { pm.expect(error.mensaje).to.eql(\"Camion no encontrado\"); });",
+                  "pm.test(\"Detalles vacios\", function () { pm.expect(error.detalles).to.eql([]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "27 Metodo no permitido",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{base_url}}/camiones/{{camion_a_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 405\", function () { pm.response.to.have.status(405); });",
+                  "const error = pm.response.json();",
+                  "pm.test(\"Formato uniforme de error\", function () {",
+                  "    pm.expect(error.estado).to.eql(pm.response.code);",
+                  "    pm.expect(error.mensaje).to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(error.detalles).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Mensaje esperado\", function () { pm.expect(error.mensaje).to.eql(\"Metodo HTTP no permitido\"); });",
+                  "pm.test(\"Detalles vacios\", function () { pm.expect(error.detalles).to.eql([]); });",
+                  "pm.test(\"Allow conserva metodos disponibles\", function () {",
+                  "    const allow = pm.response.headers.get(\"Allow\");",
+                  "    pm.expect(allow).to.include(\"GET\"); pm.expect(allow).to.include(\"PUT\"); pm.expect(allow).to.include(\"DELETE\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "28 Tipo de contenido incorrecto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/plain"
+              }
+            ],
+            "url": "{{base_url}}/camiones",
+            "body": {
+              "mode": "raw",
+              "raw": "texto",
+              "options": {
+                "raw": {
+                  "language": "text"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 415\", function () { pm.response.to.have.status(415); });",
+                  "const error = pm.response.json();",
+                  "pm.test(\"Formato uniforme de error\", function () {",
+                  "    pm.expect(error.estado).to.eql(pm.response.code);",
+                  "    pm.expect(error.mensaje).to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(error.detalles).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Mensaje esperado\", function () { pm.expect(error.mensaje).to.eql(\"El tipo de contenido no es compatible\"); });",
+                  "pm.test(\"Detalles vacios\", function () { pm.expect(error.detalles).to.eql([]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "29 Recurso inexistente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/recurso-inexistente"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 404\", function () { pm.response.to.have.status(404); });",
+                  "const error = pm.response.json();",
+                  "pm.test(\"Formato uniforme de error\", function () {",
+                  "    pm.expect(error.estado).to.eql(pm.response.code);",
+                  "    pm.expect(error.mensaje).to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(error.detalles).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Mensaje esperado\", function () { pm.expect(error.mensaje).to.eql(\"Recurso no encontrado\"); });",
+                  "pm.test(\"Detalles vacios\", function () { pm.expect(error.detalles).to.eql([]); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 Actualizar y filtrar",
+      "item": [
+        {
+          "name": "30 Actualizar camion A",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/camiones/{{camion_a_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patente\": \"{{patente_actualizada}}\",\n  \"capacidadKg\": 3500.5,\n  \"estado\": \"MANTENCION\",\n  \"conductorId\": \"{{conductor_prueba}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "const camion = pm.response.json();",
+                  "pm.test(\"Datos del camion\", function () {",
+                  "    pm.expect(camion.id).to.be.a(\"number\").and.above(0);",
+                  "    pm.expect(camion.patente).to.eql(pm.collectionVariables.get(\"patente_actualizada\"));",
+                  "    pm.expect(camion.capacidadKg).to.eql(3500.5);",
+                  "    pm.expect(camion.estado).to.eql(\"MANTENCION\");",
+                  "    pm.expect(camion.conductorId).to.eql(Number(pm.collectionVariables.get(\"conductor_prueba\")));",
+                  "});",
+                  "if (pm.response.code === 201 && Number.isInteger(camion.id) && camion.id > 0) {",
+                  "    pm.collectionVariables.set(\"camion_a_id\", String(camion.id));",
+                  "}",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test(\"ID conservado\", function () { pm.expect(String(camion.id)).to.eql(pm.collectionVariables.get(\"camion_a_id\")); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "31 Consultar cambios guardados",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/camiones/{{camion_a_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "const camion = pm.response.json();",
+                  "pm.test(\"Datos del camion\", function () {",
+                  "    pm.expect(camion.id).to.be.a(\"number\").and.above(0);",
+                  "    pm.expect(camion.patente).to.eql(pm.collectionVariables.get(\"patente_actualizada\"));",
+                  "    pm.expect(camion.capacidadKg).to.eql(3500.5);",
+                  "    pm.expect(camion.estado).to.eql(\"MANTENCION\");",
+                  "    pm.expect(camion.conductorId).to.eql(Number(pm.collectionVariables.get(\"conductor_prueba\")));",
+                  "});",
+                  "if (pm.response.code === 201 && Number.isInteger(camion.id) && camion.id > 0) {",
+                  "    pm.collectionVariables.set(\"camion_a_id\", String(camion.id));",
+                  "}",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test(\"ID conservado\", function () { pm.expect(String(camion.id)).to.eql(pm.collectionVariables.get(\"camion_a_id\")); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "32 Conductor tiene los dos camiones de prueba",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/camiones/conductor/{{conductor_prueba}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "const camiones = pm.response.json();",
+                  "pm.test(\"Respuesta es una lista\", function () { pm.expect(camiones).to.be.an(\"array\"); });",
+                  "const ids = camiones.map(function (camion) { return String(camion.id); });",
+                  "pm.test(\"Incluye camion a\", function () { pm.expect(ids).to.include(pm.collectionVariables.get(\"camion_a_id\")); });",
+                  "pm.test(\"Incluye camion b\", function () { pm.expect(ids).to.include(pm.collectionVariables.get(\"camion_b_id\")); });",
+                  "pm.test(\"Filtro correcto\", function () { pm.expect(camiones.every(function (camion) { return camion.conductorId === Number(pm.collectionVariables.get(\"conductor_prueba\")); })).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "33 Filtro de mantenimiento refleja el cambio",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/camiones/estado/MANTENCION"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "const camiones = pm.response.json();",
+                  "pm.test(\"Respuesta es una lista\", function () { pm.expect(camiones).to.be.an(\"array\"); });",
+                  "const ids = camiones.map(function (camion) { return String(camion.id); });",
+                  "pm.test(\"Incluye camion a\", function () { pm.expect(ids).to.include(pm.collectionVariables.get(\"camion_a_id\")); });",
+                  "pm.test(\"Filtro correcto\", function () { pm.expect(camiones.every(function (camion) { return camion.estado === \"MANTENCION\"; })).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "34 Mantener patente propia y omitir estado y conductor",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/camiones/{{camion_a_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patente\": \"{{patente_actualizada}}\",\n  \"capacidadKg\": 3600\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "const camion = pm.response.json();",
+                  "pm.test(\"Conserva ID, patente y estado; quita conductor\", function () {",
+                  "    pm.expect(String(camion.id)).to.eql(pm.collectionVariables.get(\"camion_a_id\"));",
+                  "    pm.expect(camion.patente).to.eql(pm.collectionVariables.get(\"patente_actualizada\"));",
+                  "    pm.expect(camion.capacidadKg).to.eql(3600);",
+                  "    pm.expect(camion.estado).to.eql(\"MANTENCION\");",
+                  "    pm.expect(camion.conductorId).to.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "35 Filtro de conductor excluye al camion desasignado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/camiones/conductor/{{conductor_prueba}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "const camiones = pm.response.json();",
+                  "pm.test(\"Respuesta es una lista\", function () { pm.expect(camiones).to.be.an(\"array\"); });",
+                  "const ids = camiones.map(function (camion) { return String(camion.id); });",
+                  "pm.test(\"Incluye camion b\", function () { pm.expect(ids).to.include(pm.collectionVariables.get(\"camion_b_id\")); });",
+                  "pm.test(\"Excluye camion a\", function () { pm.expect(ids).not.to.include(pm.collectionVariables.get(\"camion_a_id\")); });",
+                  "pm.test(\"Filtro correcto\", function () { pm.expect(camiones.every(function (camion) { return camion.conductorId === Number(pm.collectionVariables.get(\"conductor_prueba\")); })).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 Limpieza",
+      "item": [
+        {
+          "name": "36 Eliminar camion A de esta ejecucion",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{base_url}}/camiones/{{camion_a_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 204\", function () { pm.response.to.have.status(204); });",
+                  "pm.test(\"Cuerpo vacio\", function () { pm.expect(pm.response.text()).to.eql(\"\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "37 Consultar camion A eliminado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/camiones/{{camion_a_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 404\", function () { pm.response.to.have.status(404); });",
+                  "const error = pm.response.json();",
+                  "pm.test(\"Formato uniforme de error\", function () {",
+                  "    pm.expect(error.estado).to.eql(pm.response.code);",
+                  "    pm.expect(error.mensaje).to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(error.detalles).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Mensaje esperado\", function () { pm.expect(error.mensaje).to.eql(\"Camion no encontrado\"); });",
+                  "pm.test(\"Detalles vacios\", function () { pm.expect(error.detalles).to.eql([]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "38 Eliminar camion A nuevamente",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{base_url}}/camiones/{{camion_a_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 404\", function () { pm.response.to.have.status(404); });",
+                  "const error = pm.response.json();",
+                  "pm.test(\"Formato uniforme de error\", function () {",
+                  "    pm.expect(error.estado).to.eql(pm.response.code);",
+                  "    pm.expect(error.mensaje).to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(error.detalles).to.be.an(\"array\");",
+                  "});",
+                  "pm.test(\"Mensaje esperado\", function () { pm.expect(error.mensaje).to.eql(\"Camion no encontrado\"); });",
+                  "pm.test(\"Detalles vacios\", function () { pm.expect(error.detalles).to.eql([]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "39 Eliminar camion B de esta ejecucion",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{base_url}}/camiones/{{camion_b_id}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 204\", function () { pm.response.to.have.status(204); });",
+                  "pm.test(\"Cuerpo vacio\", function () { pm.expect(pm.response.text()).to.eql(\"\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "40 Comprobar limpieza en listado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/camiones"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Estado HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "const camiones = pm.response.json();",
+                  "pm.test(\"Respuesta es una lista\", function () { pm.expect(camiones).to.be.an(\"array\"); });",
+                  "const ids = camiones.map(function (camion) { return String(camion.id); });",
+                  "pm.test(\"Excluye camion a\", function () { pm.expect(ids).not.to.include(pm.collectionVariables.get(\"camion_a_id\")); });",
+                  "pm.test(\"Excluye camion b\", function () { pm.expect(ids).not.to.include(pm.collectionVariables.get(\"camion_b_id\")); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
