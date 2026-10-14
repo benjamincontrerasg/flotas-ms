@@ -2,3 +2,7 @@
 DB_URL=jdbc:postgresql://localhost:5432/flotas_db
 DB_USERNAME=postgres
 DB_PASSWORD=CAMBIAR_POR_TU_CONTRASENA
+
+# Credenciales exclusivas de flotas_test_db
+TEST_DB_USERNAME=flotas_test_user
+TEST_DB_PASSWORD=CAMBIAR_POR_TU_CONTRASENA_DE_PRUEBAS

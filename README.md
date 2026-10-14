@@ -26,7 +26,7 @@ Los datos se guardaran en PostgreSQL nativo, en `flotas_db`, tabla `camiones`.
 Los campos y reglas siguientes son decisiones de este proyecto. Describen
 lo que implementaremos en la API. Las operaciones CRUD y los filtros estan implementados. Las validaciones de entrada estan implementadas. El control de duplicados con 409 tambien esta implementado.
 ManejadorErrores centraliza las respuestas de error con RespuestaError.
-El proyecto incluye 27 pruebas unitarias del service y de las validaciones.
+El proyecto incluye 27 pruebas unitarias y 25 de integracion con PostgreSQL.
 
 ## Campos previstos del camion
 
@@ -243,7 +243,7 @@ excepciones internas al cliente.
 Ejecutar desde la raiz del proyecto con JDK 21:
 
 ```powershell
-.\mvnw.cmd test
+.\mvnw.cmd "-Dtest=CamionServiceTest,CamionRequestTest" test
 ```
 
 CamionServiceTest contiene 19 pruebas de CRUD, filtros, normalizacion,
@@ -257,7 +257,57 @@ Validation: patente obligatoria, limite de longitud despues de normalizar,
 capacidad positiva, conductor positivo cuando se indica y campos opcionales.
 
 Las 27 pruebas usan JUnit y no necesitan Spring Boot iniciado ni Docker.
-Las pruebas de API y persistencia con PostgreSQL se agregaran en el paso 18.
+Las pruebas de API y persistencia se describen en la seccion siguiente.
+
+## Pruebas de integracion con PostgreSQL
+
+CamionIntegrationTest contiene 25 pruebas con MockMvc, el service y el
+repositorio reales. Verifica CRUD, filtros, persistencia, validaciones,
+duplicados, errores HTTP y la restriccion UNIQUE de PostgreSQL.
+
+Usa `flotas_test_db` y `flotas_test_user`. Antes y despues de cada prueba
+se comprueban la base y el usuario conectado antes de limpiar los registros
+de prueba. La base de desarrollo `flotas_db` se conserva.
+
+### Preparar la base de pruebas una sola vez
+
+Con PostgreSQL nativo iniciado, ejecutar como postgres desde la raiz del repo:
+
+```powershell
+psql -h localhost -U postgres -d postgres -f sql/crear_base_pruebas.sql
+psql -h localhost -U postgres -d postgres -c '\password flotas_test_user'
+```
+
+El segundo comando pide una contrasena para el usuario de pruebas.
+Agregarla a `application-local.properties`, junto con el usuario:
+
+```properties
+TEST_DB_USERNAME=flotas_test_user
+TEST_DB_PASSWORD=TU_CONTRASENA_DE_PRUEBAS
+```
+
+El archivo local esta ignorado por Git. Tambien se pueden definir estas
+variables en el entorno. Si la base y el usuario ya existen, conservar su
+configuracion y omitir los comandos de creacion y cambio de contrasena.
+
+### Ejecutar las pruebas
+
+Con PostgreSQL iniciado, ejecutar las 52 pruebas:
+
+```powershell
+.\mvnw.cmd test
+```
+
+Para ejecutar solo las 25 de integracion:
+
+```powershell
+.\mvnw.cmd "-Dtest=CamionIntegrationTest" test
+```
+
+El perfil integration usa `src/test/resources/application-integration.properties`.
+MockMvc prueba los endpoints dentro de Spring sin abrir el puerto 8083.
+Los datos se guardan en PostgreSQL y se consultan de nuevo para verificar
+la persistencia. No requiere Docker ni Spring Boot iniciado en otra terminal.
 
 ## Relacion con los otros microservicios
 
@@ -349,7 +399,9 @@ Dentro de psql, `\d camiones` muestra sus columnas y restricciones.
 
 ## Compilar y ejecutar
 
-Abrir PowerShell en la raiz del proyecto y compilar:
+El empaquetado ejecuta las 52 pruebas. Preparar primero PostgreSQL y las
+credenciales de la base de pruebas de la seccion anterior. Desde la raiz
+del proyecto, compilar:
 
 ```powershell
 .\mvnw.cmd clean package
@@ -380,5 +432,4 @@ vez y detenerla con Ctrl+C. POST, todas las consultas GET, PUT y DELETE estan di
 
 ## Proximos pasos
 
-Agregar pruebas de integracion con PostgreSQL, una coleccion Postman y
-completar la guia de ejecucion del avance.
+Agregar la coleccion Postman y completar la guia de ejecucion del avance.
