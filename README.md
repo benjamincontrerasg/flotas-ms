@@ -1,216 +1,197 @@
 # flotas-ms
 
-Microservicio de flota de RutaLimpia, un sistema de recoleccion de reciclaje
-a domicilio.
+Microservicio de camiones de RutaLimpia, un sistema de recoleccion de
+reciclaje a domicilio. Este repositorio contiene un avance del proyecto.
 
-## Estado actual
+Incluye CRUD, filtros por estado y conductor, validaciones, control de
+patentes duplicadas y respuestas de error uniformes. Guarda los camiones
+en PostgreSQL nativo, en `flotas_db`, y atiende en `http://localhost:8083`.
 
-El proyecto compila y genera un JAR. Incluye Spring Boot, Maven Wrapper,
-JPA, validacion, el driver de PostgreSQL y la configuracion del puerto 8083.
-La conexion a PostgreSQL nativo usa flotas_db y configuracion local.
-La entidad Camion y el enum EstadoCamion estan implementados. Hibernate
-crea la tabla camiones al iniciar. CamionRepository usa JpaRepository para
-guardar, listar, consultar y eliminar camiones. CamionRequest y CamionResponse
-definen los datos de entrada y salida. POST /camiones ya permite crear camiones
-y guardarlos en PostgreSQL. GET /camiones permite listar; los filtros por
-estado y conductor tambien estan implementados. GET /camiones/{id} consulta
-un camion por ID, PUT /camiones/{id} guarda sus cambios y DELETE /camiones/{id}
-lo elimina. Las operaciones del CRUD y los filtros estan implementados.
+Para esta instalacion de Windows, seguir la
+[guia de ejecucion local](docs/ejecucion-local.md). Para probar la API,
+usar la [coleccion Postman](postman/README.md).
 
-## Alcance del CRUD
+## Requisitos
 
-Este avance gestionara camiones: crear, listar, consultar por ID, actualizar
-y eliminar. Tambien permitira consultar por estado y por conductor asignado.
-Los datos se guardaran en PostgreSQL nativo, en `flotas_db`, tabla `camiones`.
+- JDK 21 y `JAVA_HOME` apuntando a su carpeta de instalacion.
+- PostgreSQL instalado y escuchando en `localhost:5432`.
+- Git para clonar el repositorio.
+- Postman para ejecutar la coleccion desde su interfaz.
 
-Los campos y reglas siguientes son decisiones de este proyecto. Describen
-lo que implementaremos en la API. Las operaciones CRUD y los filtros estan implementados. Las validaciones de entrada estan implementadas. El control de duplicados con 409 tambien esta implementado.
-ManejadorErrores centraliza las respuestas de error con RespuestaError.
-El proyecto incluye 27 pruebas unitarias y 25 de integracion con PostgreSQL.
+Spring Boot usa la version 4.0.5. Maven se ejecuta con el Wrapper incluido;
+no hace falta instalar Maven por separado. La primera compilacion necesita
+internet para descargar las dependencias.
 
-## Campos previstos del camion
+## Obtener el proyecto
 
-| Campo | Tipo Java | Regla prevista |
-| --- | --- | --- |
-| id | Long | Generado por PostgreSQL; se conserva al actualizar. |
-| patente | String | Obligatoria, unica y de hasta 10 caracteres. |
-| capacidadKg | Double | Obligatoria y mayor que cero; expresada en kilogramos. |
-| estado | EstadoCamion (enum) | DISPONIBLE, EN_RUTA o MANTENCION. |
-| conductorId | Long | Opcional; si se indica, debe ser mayor que cero. |
+```powershell
+git clone https://github.com/benjamincontrerasg/flotas-ms.git
+cd flotas-ms
+.\mvnw.cmd -version
+```
 
-CamionRequest recibe patente, capacidadKg, estado y conductorId. No incluye
-un campo ID. Estado y conductorId pueden quedar null para que el service
-aplique las reglas previstas en creacion y actualizacion.
-CamionResponse incluye los cinco campos de la tabla anterior.
-POST y PUT validan CamionRequest con @Valid. El service tambien comprueba
-patente obligatoria y capacidad finita mayor que cero.
+La salida debe indicar Java 21. Si el repositorio ya esta clonado, abrir
+una terminal en su carpeta y continuar con la configuracion.
 
-## Estados previstos
+## Preparar la base de desarrollo
 
-- `DISPONIBLE`: registrado como disponible para asignacion.
-- `EN_RUTA`: registrado como realizando una ruta de recoleccion.
-- `MANTENCION`: registrado como en mantenimiento.
+Los comandos `psql` y `pg_isready` deben estar disponibles en PATH.
+Con PostgreSQL iniciado, comprobar la conexion y crear la base una sola vez:
 
-Al crear, el estado sera DISPONIBLE si se omite o se envia null.
-Al actualizar, omitir el estado o enviarlo null conservara el estado anterior.
-Un valor diferente de los tres definidos devolvera 400.
+```powershell
+pg_isready -h localhost -p 5432
+psql -h localhost -U postgres -d postgres -f sql/crear_base.sql
+```
 
-En este CRUD el estado se gestionara desde Flota. La sincronizacion del estado
-con las operaciones de Rutas queda para una etapa posterior.
+Si `flotas_db` ya existe, omitir el script de creacion. Copiar el ejemplo
+solo si aun no existe el archivo local:
 
-## Reglas previstas
+```powershell
+if (-not (Test-Path application-local.properties)) {
+    Copy-Item application-local.properties.example application-local.properties
+}
+```
 
-- POST y PUT requeriran patente y capacidadKg.
-- La patente se guardara sin espacios exteriores y en mayusculas.
-- Los duplicados se comprueban ignorando mayusculas y minusculas; la tabla
-  mantiene una restriccion UNIQUE sobre la patente normalizada.
-- PUT conservara el ID y permitira mantener la patente del propio camion.
-- Omitir conductorId o enviarlo null en PUT quitara la asignacion anterior.
-- Un ID inexistente devolvera 404; una patente duplicada devolvera 409.
-- Los datos invalidos devolveran 400 y los errores tendran formato uniforme.
-- Los listados por estado o conductor sin coincidencias devolveran `[]`.
+Editar sus credenciales:
 
-No se exigira un patron de patente de un pais especifico en este avance.
-La comprobacion de existencia y rol del conductor en Usuarios queda pendiente
-para la coordinacion entre servicios.
+```properties
+DB_URL=jdbc:postgresql://localhost:5432/flotas_db
+DB_USERNAME=postgres
+DB_PASSWORD=TU_CONTRASENA
+```
 
-## Endpoints previstos
+`application-local.properties` esta ignorado por Git. Tambien se pueden
+definir estas variables en el entorno. Ejecutar los comandos de Spring Boot
+desde la raiz del repositorio para que encuentre el archivo local.
+Hibernate crea o actualiza la tabla `camiones` al iniciar la aplicacion.
 
-Base local: `http://localhost:8083`. POST /camiones y los GET de listado, estado
-y conductor, junto con GET, PUT y DELETE /camiones/{id}, estan implementados.
+## Ejecutar durante el desarrollo
+
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
+Esperar el mensaje de arranque y, desde otra terminal, comprobar la API:
+
+```powershell
+Invoke-RestMethod -Uri 'http://localhost:8083/camiones' -Method Get
+```
+
+Devuelve una lista; `[]` es correcto cuando no hay camiones. Iniciar una
+sola instancia y detenerla con Ctrl+C. La ejecucion local usa PostgreSQL
+nativo. Las pruebas de integracion requieren una base adicional.
+
+## Preparar y ejecutar las pruebas
+
+Crear la base y su usuario una sola vez, como postgres:
+
+```powershell
+psql -h localhost -U postgres -d postgres -f sql/crear_base_pruebas.sql
+psql -h localhost -U postgres -d postgres -c '\password flotas_test_user'
+```
+
+El segundo comando pide la contrasena del usuario de pruebas. Agregarla
+al mismo `application-local.properties`:
+
+```properties
+TEST_DB_USERNAME=flotas_test_user
+TEST_DB_PASSWORD=TU_CONTRASENA_DE_PRUEBAS
+```
+
+Si ya existen la base y el usuario, conservar las credenciales actuales y
+omitir su creacion. Con PostgreSQL iniciado, ejecutar:
+
+```powershell
+.\mvnw.cmd test
+```
+
+Hay 27 pruebas unitarias y 25 de integracion. Las unitarias comprueban el
+service con Mockito y las restricciones de CamionRequest con Jakarta
+Validation. Las de integracion usan MockMvc, JPA y PostgreSQL reales, sin
+abrir el puerto 8083. Comprueban CRUD, filtros, persistencia, validaciones,
+duplicados, errores HTTP y la restriccion UNIQUE.
+
+El perfil `integration` fija la conexion a `flotas_test_db` con
+`flotas_test_user`. Antes y despues de cada prueba verifica la base y el
+usuario, y limpia sus registros. Usar esa base exclusivamente para pruebas.
+
+Para ejecutar solo las unitarias, sin PostgreSQL:
+
+```powershell
+.\mvnw.cmd "-Dtest=CamionServiceTest,CamionRequestTest" test
+```
+
+Para ejecutar solo las de integracion:
+
+```powershell
+.\mvnw.cmd "-Dtest=CamionIntegrationTest" test
+```
+
+## Empaquetar y ejecutar el JAR
+
+El empaquetado ejecuta las 52 pruebas; preparar sus credenciales y mantener
+PostgreSQL iniciado:
+
+```powershell
+.\mvnw.cmd clean package
+```
+
+Detener cualquier instancia anterior y ejecutar desde la raiz del repo:
+
+```powershell
+& "$env:JAVA_HOME\bin\java.exe" -jar target/flotas-ms-0.0.1-SNAPSHOT.jar
+```
+
+El JAR usa la misma configuracion local y el puerto 8083. Detenerlo con
+Ctrl+C. Los reportes de las pruebas quedan en `target/surefire-reports`.
+
+## API
+
+Base local: `http://localhost:8083`.
 
 | Metodo | Ruta | Funcion | Respuesta correcta |
 | --- | --- | --- | --- |
-| POST | `/camiones` | Crear un camion. | 201 Created |
-| GET | `/camiones` | Listar camiones. | 200 OK |
-| GET | `/camiones/{id}` | Consultar por ID. | 200 OK |
-| PUT | `/camiones/{id}` | Actualizar un camion. | 200 OK |
-| DELETE | `/camiones/{id}` | Eliminar un camion. | 204 No Content |
-| GET | `/camiones/estado/{estado}` | Consultar por estado. | 200 OK |
-| GET | `/camiones/conductor/{conductorId}` | Consultar por conductor. | 200 OK |
+| POST | `/camiones` | Crear un camion. | 201 |
+| GET | `/camiones` | Listar camiones. | 200 |
+| GET | `/camiones/{id}` | Consultar por ID. | 200 |
+| PUT | `/camiones/{id}` | Actualizar un camion. | 200 |
+| DELETE | `/camiones/{id}` | Eliminar un camion. | 204, cuerpo vacio |
+| GET | `/camiones/estado/{estado}` | Filtrar por estado. | 200 |
+| GET | `/camiones/conductor/{conductorId}` | Filtrar por conductor. | 200 |
 
-Ejemplo del JSON para POST /camiones, con estado inicial DISPONIBLE y sin
-conductor asignado:
+POST y PUT reciben `Content-Type: application/json`. Ejemplo para crear:
 
 ```json
 {
   "patente": "ABCD12",
   "capacidadKg": 3500.0,
+  "estado": "DISPONIBLE",
   "conductorId": null
 }
 ```
 
-POST devuelve 201 Created con id, patente, capacidadKg, estado y conductorId.
-La patente se guarda sin espacios exteriores y en mayusculas. Si se omite
-el estado o se envia null, se conserva el valor inicial DISPONIBLE.
-Patente vacia o capacidad ausente, no finita o menor o igual a cero devuelven 400.
-Las restricciones de longitud y conductorId estan implementadas. Los duplicados devuelven 409. Las respuestas de error usan el formato uniforme documentado mas abajo.
+| Campo | Regla |
+| --- | --- |
+| id | Long generado por PostgreSQL; no forma parte del request. |
+| patente | Obligatoria, unica y de hasta 10 caracteres despues de normalizar. |
+| capacidadKg | Numero obligatorio, finito y mayor que cero, en kilogramos. |
+| estado | DISPONIBLE, EN_RUTA o MANTENCION. |
+| conductorId | Long opcional; si se indica, debe ser positivo. |
 
-## Listar y filtrar camiones
+La patente se guarda sin espacios exteriores y en mayusculas; los
+duplicados se comparan ignorando mayusculas y minusculas. PostgreSQL
+mantiene una restriccion UNIQUE. No se exige un patron de patente de un
+pais especifico. Estos campos y reglas son decisiones de este proyecto.
 
-Con el servicio iniciado, ejecutar desde otra terminal:
+Al crear, omitir estado o enviarlo null asigna DISPONIBLE. Al actualizar,
+omitirlo o enviarlo null conserva el estado anterior. PUT exige patente y
+capacidadKg, conserva el ID y permite mantener la patente del propio camion.
+Omitir conductorId o enviarlo null en PUT quita la asignacion anterior.
+Los listados sin coincidencias devuelven `[]`; su orden no esta definido.
 
-```powershell
-Invoke-RestMethod -Uri 'http://localhost:8083/camiones' -Method Get
-Invoke-RestMethod -Uri 'http://localhost:8083/camiones/estado/DISPONIBLE' -Method Get
-Invoke-RestMethod -Uri 'http://localhost:8083/camiones/conductor/1' -Method Get
-```
+## Errores
 
-Los tres endpoints devuelven 200 OK y una lista de CamionResponse con id,
-patente, capacidadKg, estado y conductorId. Si no hay coincidencias, devuelven
-`[]`. El listado general incluye tambien camiones sin conductor asignado.
-El orden de las listas no esta definido.
-
-El filtro de estado recibe DISPONIBLE, EN_RUTA o MANTENCION en mayusculas.
-Un estado desconocido devuelve 400. El ID del conductor debe ser un Long
-positivo: texto, cero o valores negativos devuelven 400. Un ID positivo sin
-camiones asignados devuelve una lista vacia.
-
-El filtro consulta el conductorId guardado en Flota. La comprobacion del
-usuario y su rol en el servicio Usuarios sigue pendiente.
-
-## Consultar un camion por ID
-
-Enviar GET a `http://localhost:8083/camiones/{id}`, reemplazando `{id}` por
-el ID generado al crear un camion. Devuelve 200 OK con id, patente,
-capacidadKg, estado y conductorId del registro guardado en PostgreSQL.
-
-Un ID numerico inexistente devuelve 404 Not Found. Un ID con texto o fuera
-del rango de Long devuelve 400 Bad Request. Esta consulta no modifica datos.
-
-## Actualizar un camion
-
-Enviar PUT a `http://localhost:8083/camiones/{id}` con el ID real del camion,
-`Content-Type: application/json` y el body:
-
-```json
-{
-  "patente": "ABCD12",
-  "capacidadKg": 4000.0,
-  "estado": "MANTENCION",
-  "conductorId": null
-}
-```
-
-Devuelve 200 OK con los datos actualizados. Conserva el ID, normaliza la
-patente y guarda los cambios en PostgreSQL. Patente y capacidadKg son
-obligatorias. Si se omite estado o se envia null, conserva el estado anterior.
-Si se omite conductorId o se envia null, quita la asignacion anterior.
-
-Un ID inexistente devuelve 404 y no crea un camion nuevo. Patente vacia,
-capacidad ausente, no finita o menor o igual a cero devuelven 400. Un estado
-desconocido, JSON incorrecto o ID no numerico tambien devuelve 400.
-Las validaciones de entrada y el error 409 por patentes duplicadas estan
-implementados.
-
-## Eliminar un camion
-
-Enviar DELETE a `http://localhost:8083/camiones/{id}` con el ID real del
-camion. No requiere body. Si existe, devuelve 204 No Content con cuerpo
-vacio y elimina el registro de PostgreSQL.
-
-Un ID inexistente devuelve 404 Not Found. Consultar un camion eliminado
-por ID o intentar eliminarlo otra vez tambien devuelve 404. Un ID con texto
-o fuera del rango de Long devuelve 400 Bad Request.
-
-La eliminacion afecta al registro de Flota. Las referencias de Rutas deben
-revisarse antes de eliminar camiones usados en pruebas compartidas.
-
-## Validaciones de entrada
-
-POST y PUT usan `@Valid` con las restricciones de CamionRequest:
-
-- Patente: obligatoria, hasta 10 caracteres despues de quitar espacios
-  exteriores y convertir a mayusculas.
-- Capacidad: obligatoria, numero finito mayor que cero.
-- ConductorId: opcional; si se indica, debe ser un Long mayor que cero.
-- Estado: opcional; si se indica, debe ser DISPONIBLE, EN_RUTA o MANTENCION.
-
-Las anotaciones usadas son `@NotBlank`, `@Size`, `@NotNull` y `@Positive`.
-El enum valida los estados recibidos y el service comprueba que la capacidad
-sea finita. Omitir estado o conductorId mantiene las reglas ya documentadas
-para POST y PUT.
-
-Los datos invalidos devuelven 400 y no se guardan. Un PUT rechazado por
-validacion conserva los datos anteriores del camion. Los errores de validacion usan el formato uniforme con detalles por campo.
-
-## Patentes duplicadas
-
-- POST devuelve 409 Conflict si la patente ya pertenece a un camion.
-- PUT devuelve 409 si intenta usar la patente de otro camion.
-- PUT permite conservar la patente del propio camion.
-- Las comparaciones ignoran mayusculas y minusculas; la patente se guarda
-  sin espacios exteriores y en mayusculas.
-
-CamionRepository comprueba la existencia antes de guardar. PostgreSQL
-mantiene la restriccion UNIQUE. Si dos peticiones intentan guardar la misma
-patente, la base evita el duplicado y el service convierte ese conflicto
-en una respuesta 409. Los otros errores de persistencia siguen su curso.
-
-## Formato de errores
-
-ManejadorErrores usa `@RestControllerAdvice` para responder con los mismos
-campos en los errores de la API:
+Las respuestas de error usan este formato:
 
 ```json
 {
@@ -220,226 +201,48 @@ campos en los errores de la API:
 }
 ```
 
-- `estado`: codigo HTTP de la respuesta.
-- `mensaje`: descripcion del problema.
-- `detalles`: errores de validacion por campo; vacio en los otros casos.
-
-| Estado | Motivo |
+| Codigo | Motivo |
 | --- | --- |
-| 400 | Datos invalidos, JSON incorrecto, estado desconocido o parametros invalidos. |
+| 400 | Datos invalidos, JSON incorrecto o parametros invalidos. |
 | 404 | Camion o recurso inexistente. |
 | 409 | Patente duplicada al crear o actualizar. |
-| 405 | Metodo HTTP no permitido; conserva el encabezado Allow. |
+| 405 | Metodo no permitido; conserva el encabezado Allow. |
 | 415 | Tipo de contenido incompatible. |
-| 500 | Error inesperado; mensaje generico y detalles tecnicos en los logs. |
+| 500 | Error inesperado; detalles tecnicos en los logs. |
 
-Las validaciones de CamionRequest devuelven mensajes como
-`patente: La patente es obligatoria` dentro de detalles. El orden de estos
-mensajes no esta definido. Los errores inesperados no devuelven sus
-excepciones internas al cliente.
+Los errores de validacion incluyen mensajes por campo en `detalles`, por
+ejemplo `patente: La patente es obligatoria`. Su orden no esta definido.
+Los otros casos usan una lista vacia. Un PUT rechazado conserva los datos
+anteriores; actualizar un ID inexistente no crea un camion.
 
-## Pruebas unitarias
+## Postman
 
-Ejecutar desde la raiz del proyecto con JDK 21:
+Importar [Flota.postman_collection.json](postman/Flota.postman_collection.json)
+y seguir la [guia de la coleccion](postman/README.md). Las 40 peticiones
+deben ejecutarse en orden: crean dos camiones, prueban el CRUD, filtros y
+errores, y eliminan sus registros. Guardan los IDs automaticamente y no
+suponen que la base este vacia.
 
-```powershell
-.\mvnw.cmd "-Dtest=CamionServiceTest,CamionRequestTest" test
-```
+La coleccion se verifico con Newman y PostgreSQL de pruebas: 40 peticiones
+y 147 comprobaciones aprobadas.
 
-CamionServiceTest contiene 19 pruebas de CRUD, filtros, normalizacion,
-patentes duplicadas, conservacion de ID y estado, conductor opcional,
-datos obligatorios y capacidad finita. Tambien verifica que el conflicto
-SQL 23505 se convierta en 409 y que otros errores de persistencia se propaguen.
-Mockito simula CamionRepository; estas pruebas no conectan a PostgreSQL.
+## Organizacion
 
-CamionRequestTest contiene 8 pruebas con el validador real de Jakarta
-Validation: patente obligatoria, limite de longitud despues de normalizar,
-capacidad positiva, conductor positivo cuando se indica y campos opcionales.
-
-Las 27 pruebas usan JUnit y no necesitan Spring Boot iniciado ni Docker.
-Las pruebas de API y persistencia se describen en la seccion siguiente.
-
-## Pruebas de integracion con PostgreSQL
-
-CamionIntegrationTest contiene 25 pruebas con MockMvc, el service y el
-repositorio reales. Verifica CRUD, filtros, persistencia, validaciones,
-duplicados, errores HTTP y la restriccion UNIQUE de PostgreSQL.
-
-Usa `flotas_test_db` y `flotas_test_user`. Antes y despues de cada prueba
-se comprueban la base y el usuario conectado antes de limpiar los registros
-de prueba. La base de desarrollo `flotas_db` se conserva.
-
-### Preparar la base de pruebas una sola vez
-
-Con PostgreSQL nativo iniciado, ejecutar como postgres desde la raiz del repo:
-
-```powershell
-psql -h localhost -U postgres -d postgres -f sql/crear_base_pruebas.sql
-psql -h localhost -U postgres -d postgres -c '\password flotas_test_user'
-```
-
-El segundo comando pide una contrasena para el usuario de pruebas.
-Agregarla a `application-local.properties`, junto con el usuario:
-
-```properties
-TEST_DB_USERNAME=flotas_test_user
-TEST_DB_PASSWORD=TU_CONTRASENA_DE_PRUEBAS
-```
-
-El archivo local esta ignorado por Git. Tambien se pueden definir estas
-variables en el entorno. Si la base y el usuario ya existen, conservar su
-configuracion y omitir los comandos de creacion y cambio de contrasena.
-
-### Ejecutar las pruebas
-
-Con PostgreSQL iniciado, ejecutar las 52 pruebas:
-
-```powershell
-.\mvnw.cmd test
-```
-
-Para ejecutar solo las 25 de integracion:
-
-```powershell
-.\mvnw.cmd "-Dtest=CamionIntegrationTest" test
-```
-
-El perfil integration usa `src/test/resources/application-integration.properties`.
-MockMvc prueba los endpoints dentro de Spring sin abrir el puerto 8083.
-Los datos se guardan en PostgreSQL y se consultan de nuevo para verificar
-la persistencia. No requiere Docker ni Spring Boot iniciado en otra terminal.
-
-## Relacion con los otros microservicios
-
-Rutas guarda `camionId` como Long. Por eso el ID de Camion tambien sera Long.
-`conductorId` referenciara el ID de un usuario del microservicio Usuarios.
-
-Flota mantendra su propia base de datos. Las referencias a otros servicios
-se guardaran como IDs; las relaciones JPA se limitaran a entidades de esta
-misma base. Las llamadas HTTP entre servicios quedan para una etapa posterior.
-
-Eliminar un camion en Flota no eliminara ni comprobara sus rutas. Antes de
-borrar camiones usados en pruebas compartidas, revisar sus referencias con Rutas.
-
-## Organizacion prevista
-
-- `controller`: endpoints REST de camiones.
-- `service`: operaciones y reglas de flota.
-- `repository`: CamionRepository proporciona acceso a PostgreSQL con JpaRepository.
-- `model`: entidad Camion y enum EstadoCamion.
-- `dto`: CamionRequest para entrada, CamionResponse para respuesta y RespuestaError para errores.
+- `controller`: endpoints REST.
+- `service`: operaciones y reglas de camiones.
+- `repository`: acceso a PostgreSQL con JpaRepository.
+- `model`: Camion y EstadoCamion.
+- `dto`: CamionRequest, CamionResponse y RespuestaError.
 - `exception`: manejo centralizado de errores.
+- `sql`: creacion de las bases de desarrollo y pruebas.
+- `postman`: coleccion y guia de uso.
 
-## Tecnologias
+## Coordinacion pendiente
 
-- Java 21.
-- Spring Boot 4.0.5.
-- Spring Data JPA y Jakarta Validation.
-- Driver de PostgreSQL para la persistencia.
-- Maven mediante el Wrapper incluido.
+Rutas guarda `camionId` como Long y Flota guarda `conductorId` como referencia
+a Usuarios. Cada microservicio tiene su propia base. Flota no comprueba
+todavia la existencia o el rol del conductor en Usuarios ni sincroniza el
+estado del camion con Rutas; las llamadas HTTP quedan para una etapa posterior.
 
-## Requisitos
-
-Instalar un JDK 21 y configurar JAVA_HOME con su carpeta de instalacion.
-Ejemplo para esta instalacion de Windows:
-
-```powershell
-$env:JAVA_HOME = 'C:\Program Files\Java\jdk-21.0.10'
-.\mvnw.cmd -version
-```
-
-La salida de Maven debe indicar Java 21. La primera compilacion necesita
-internet para descargar las dependencias.
-
-## Preparar PostgreSQL nativo
-
-Con PostgreSQL instalado directamente y en ejecucion, comprobar la conexion:
-
-```powershell
-pg_isready -h localhost -p 5432
-```
-
-Crear la base una sola vez, desde la raiz del proyecto:
-
-```powershell
-psql -h localhost -U postgres -d postgres -f sql/crear_base.sql
-```
-
-Si `flotas_db` ya existe, conservarla y omitir el script de creacion.
-Copiar el ejemplo solo si aun no existe la configuracion local:
-
-```powershell
-if (-not (Test-Path application-local.properties)) {
-    Copy-Item application-local.properties.example application-local.properties
-}
-```
-
-Editar `application-local.properties` con las credenciales propias:
-
-```properties
-DB_URL=jdbc:postgresql://localhost:5432/flotas_db
-DB_USERNAME=postgres
-DB_PASSWORD=TU_CONTRASENA
-```
-
-Este archivo esta ignorado por Git. Tambien se pueden definir DB_URL,
-DB_USERNAME y DB_PASSWORD como variables de entorno. Ejecutar Spring Boot
-desde la raiz del proyecto para que encuentre el archivo local.
-
-Para consultar la base desde otra terminal:
-
-```powershell
-psql -h localhost -U postgres -d flotas_db
-```
-
-Dentro de psql, `SELECT current_database();` debe devolver `flotas_db`.
-Usar `\dt` para listar tablas y `\q` para salir. Hibernate crea la tabla
-`camiones` a partir de la entidad implementada al iniciar la aplicacion.
-Dentro de psql, `\d camiones` muestra sus columnas y restricciones.
-
-## Compilar y ejecutar
-
-El empaquetado ejecuta las 52 pruebas. Preparar primero PostgreSQL y las
-credenciales de la base de pruebas de la seccion anterior. Desde la raiz
-del proyecto, compilar:
-
-```powershell
-.\mvnw.cmd clean package
-```
-
-Maven genera `target/flotas-ms-0.0.1-SNAPSHOT.jar`.
-Para iniciar durante el desarrollo:
-
-```powershell
-.\mvnw.cmd spring-boot:run
-```
-
-Como alternativa, ejecutar el JAR:
-
-```powershell
-& "$env:JAVA_HOME\bin\java.exe" -jar target/flotas-ms-0.0.1-SNAPSHOT.jar
-```
-
-La aplicacion usa `http://localhost:8083`. Iniciar una sola instancia a la
-vez y detenerla con Ctrl+C. POST, todas las consultas GET, PUT y DELETE estan disponibles.
-
-## Coleccion Postman
-
-La [coleccion de Flota](postman/Flota.postman_collection.json) incluye 40
-peticiones para el CRUD, los filtros y los errores. Guarda los IDs y limpia
-los dos camiones que crea. Consultar la [guia de Postman](postman/README.md)
-para importarla y ejecutarla en orden.
-
-Se verifico con Newman y PostgreSQL de pruebas: 40 peticiones y 147
-comprobaciones aprobadas.
-
-## Archivos de desarrollo
-
-- `.gitignore` excluye archivos generados, configuraciones locales de IDE
-  y credenciales de los commits.
-- `.gitattributes` mantiene LF en los archivos de texto y CRLF en `mvnw.cmd`.
-- `.mvn`, `mvnw` y `mvnw.cmd` permiten usar Maven sin instalarlo por separado.
-
-## Proximos pasos
-
-Completar la guia de ejecucion del avance.
+Eliminar un camion no consulta ni elimina sus rutas. Revisar las referencias
+con Rutas antes de borrar camiones usados en pruebas compartidas.
